@@ -5,9 +5,33 @@ All notable changes to voice-goio. The format follows
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
-## [0.1.0] — 2026-09-28
+## [0.1.1] — 2026-09-28
 
-Requires Go 1.27 or newer.
+Toolchain and CI only; no change to the library itself. **Use this rather than
+v0.1.0**, whose workflow was misconfigured.
+
+### Changed
+
+- Requires Go 1.27 or newer, up from 1.24. The `go` directive is a floor on
+  the consumer's toolchain, so this is a narrowing, taken because the library
+  is developed and tested on 1.27 and CI was previously exercising a toolchain
+  nobody runs.
+
+### Fixed
+
+- The race step ran with `CGO_ENABLED=0`, which the race detector cannot do,
+  so it never ran at all. It now opts back into cgo for that one step; the
+  shipped build is still `CGO_ENABLED=0` everywhere.
+- On Windows the checkout converted the tree to CRLF and `gofmt -l` then
+  reported every file as unformatted. A `.gitattributes` pins the working tree
+  to LF on all platforms.
+- `make release-check` builds, vets, tests and cross-compiles a clean clone of
+  `HEAD`. This is the check that a file is in the repository rather than only
+  on the developer's disk — an over-broad `.gitignore` pattern had excluded
+  `internal/wav` from the first release commit, which built locally and failed
+  every CI job on a fresh checkout.
+
+## [0.1.0] — 2026-09-28
 
 First tagged release. The platform-independent half of SPEC.md is complete and
 tested; the Windows backends are written and cross-compile on every commit but
