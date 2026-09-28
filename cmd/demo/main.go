@@ -318,10 +318,15 @@ func (r *rig) live(o opts) error {
 	for _, c := range roster {
 		fmt.Printf("  %-8s \x1b[2m%s\x1b[0m\n", c.ICAO, normalise.SpokenCallsign(c.ICAO))
 	}
-	fmt.Println("\nType a transmission the way a pilot says it, for example:")
+	fmt.Println("\nType a transmission the way a pilot says it:")
 	fmt.Println("  \x1b[2mSpeedbird one two three descending flight level one zero zero\x1b[0m")
 	fmt.Println("  \x1b[2moscar kilo alpha bravo charlie request pushback\x1b[0m")
-	fmt.Println("Ctrl-D to quit.")
+	fmt.Println("\nThe identifier and plain digits work too, which is quicker to type.")
+	fmt.Println("The real recogniser only ever hears words, so this is a harness")
+	fmt.Println("convenience and nothing the Windows backend has to cope with:")
+	fmt.Println("  \x1b[2mCSA1234 with you, 15000\x1b[0m")
+	fmt.Println("  \x1b[2mDLH4EK request climb FL370\x1b[0m")
+	fmt.Println("\nCtrl-D to quit.")
 
 	for {
 		fmt.Print("\n\x1b[1mPTT>\x1b[0m ")
@@ -392,6 +397,8 @@ func reply(rec voicegoio.Recognition) string {
 		return cs + " roger, climb 3000 ft, HDG 240, contact approach on 119.710"
 	case "checkin":
 		return cs + " identified, descend FL100, QNH 1013"
+	case "ident":
+		return cs + " ident observed, radar contact, descend FL100"
 	case "wilco", "roger", "standby", "affirm":
 		return cs + " roger"
 	case voicegoio.IntentSayAgain:

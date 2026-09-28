@@ -102,6 +102,8 @@
       <item>say again<tag>out="say_again";</tag></item>
       <item>standby<tag>out="standby";</tag></item>
       <item>roger<tag>out="roger";</tag></item>
+      <item>ident<tag>out="ident";</tag></item>
+      <item>squawk ident<tag>out="ident";</tag></item>
       <item>wilco<tag>out="wilco";</tag></item>
       <item>affirm<tag>out="affirm";</tag></item>
       <item>negative<tag>out="negative";</tag></item>

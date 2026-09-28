@@ -30,15 +30,26 @@ func NewParser() *Parser { return &Parser{roster: map[string]string{}} }
 // SetCallsigns replaces the roster. Every phraseology variant of a callsign is
 // registered, so "Speedbird one two three" and "Speedbird one two tree" both
 // resolve to BAW123.
+//
+// The identifier itself is registered too — "CSA1234", and "OKABC" for a
+// registration written with a hyphen. Speech never produces those, so it makes
+// no difference to the Windows backend, but this parser also backs the typing
+// harness, and being made to type "CSA one two three four" to refer to an
+// aircraft the screen is calling CSA1234 is a papercut with nothing behind it.
 func (p *Parser) SetCallsigns(cs []voicegoio.Callsign) {
-	r := make(map[string]string, len(cs)*2)
+	r := make(map[string]string, len(cs)*3)
 	for _, c := range cs {
+		icao := strings.ToUpper(c.ICAO)
 		spoken := c.Spoken
 		if spoken == "" {
 			spoken = normalise.SpokenCallsign(c.ICAO)
 		}
 		for _, v := range normalise.SpokenVariants(spoken) {
-			r[strings.ToLower(v)] = strings.ToUpper(c.ICAO)
+			r[strings.ToLower(v)] = icao
+		}
+		r[strings.ToLower(icao)] = icao
+		if bare := strings.ReplaceAll(strings.ToLower(icao), "-", ""); bare != "" {
+			r[bare] = icao
 		}
 	}
 	p.roster = r
@@ -121,7 +132,9 @@ func tokenize(s string) []string {
 // three, engine failure" — and that is the one transmission that must not be
 // missed.
 func (p *Parser) matchCallsign(toks []string) (string, []string) {
-	for n := min(len(toks), 8); n >= 2; n-- {
+	// Down to one token: a spoken callsign is always several words, but a
+	// typed identifier is one.
+	for n := min(len(toks), 8); n >= 1; n-- {
 		for start := 0; start+n <= len(toks); start++ {
 			icao, ok := p.roster[strings.Join(toks[start:start+n], " ")]
 			if !ok {
@@ -137,16 +150,37 @@ func (p *Parser) matchCallsign(toks []string) (string, []string) {
 }
 
 // digits collects consecutive spoken digits starting at i.
+//
+// A token that is already written as digits is taken as it stands. The
+// recogniser never produces one, but the typing harness does, and "15000" is a
+// great deal easier to type than "one fife zero zero zero".
 func digits(toks []string, i int) (string, int) {
 	var b []byte
 	for ; i < len(toks); i++ {
-		d, ok := digitWord[toks[i]]
-		if !ok {
+		if d, ok := digitWord[toks[i]]; ok {
+			b = append(b, d)
+			continue
+		}
+		if isNumeric(toks[i]) {
+			b = append(b, toks[i]...)
+			i++
 			break
 		}
-		b = append(b, d)
+		break
 	}
 	return string(b), i
+}
+
+func isNumeric(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // letters collects consecutive NATO letters, with optional trailing digit, as
@@ -171,6 +205,10 @@ func letters(toks []string, i int) (string, int) {
 // "flight level three five zero" -> FL350, "five thousand" -> 5000,
 // "two thousand five hundred" -> 2500.
 func level(toks []string, i int) (string, int) {
+	// "FL370" as typed, alongside the spoken "flight level tree seven zero".
+	if i < len(toks) && len(toks[i]) > 2 && strings.HasPrefix(toks[i], "fl") && isNumeric(toks[i][2:]) {
+		return "FL" + toks[i][2:], i + 1
+	}
 	if i+1 < len(toks) && toks[i] == "flight" && toks[i+1] == "level" {
 		d, j := digits(toks, i+2)
 		if d == "" {
@@ -260,6 +298,11 @@ func parseBody(toks []string) (intent, value string) {
 	}
 	if _, ok := phrase(toks, "say", "again"); ok {
 		return voicegoio.IntentSayAgain, ""
+	}
+	// "ident" and "squawk ident" are the same instruction; the squawk rule
+	// below needs four digits and so declines this one on its own.
+	if _, ok := phrase(toks, "ident"); ok {
+		return "ident", ""
 	}
 	for _, w := range []string{"standby", "roger", "wilco", "affirm", "negative"} {
 		if _, ok := phrase(toks, w); ok {

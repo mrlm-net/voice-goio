@@ -93,6 +93,11 @@ switch r.Tags[voicegoio.TagIntent] { ... }
 
 On macOS use `stt/fake` (typed input or a script) — the same interface.
 
+As a typing convenience, `stt/fake` also accepts the identifier and plain
+digits: `CSA1234 with you, 15000` and `DLH4EK request climb FL370` tag exactly
+as their spoken equivalents do. Speech never produces those forms, so nothing
+in the Windows backend has to cope with them.
+
 ## What is where
 
 | Path | What it does |

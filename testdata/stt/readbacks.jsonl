@@ -39,3 +39,10 @@
 {"text": "one one niner decimal seven two zero Speedbird one two three", "tags": {"intent": "readback_frequency", "callsign": "BAW123", "value": "119.720"}}
 {"text": "descend tree thousand feet heading two seven zero speed one eight zero knots CSA one two three four", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "3000"}}
 {"text": "taxi to stand four two via bravo and alpha oscar kilo alpha bravo charlie", "tags": {"intent": "readback_taxi", "callsign": "OK-ABC", "value": "B A"}}
+{"text": "CSA1234 ident", "tags": {"intent": "ident", "callsign": "CSA1234", "value": ""}}
+{"text": "Speedbird one two three squawk ident", "tags": {"intent": "ident", "callsign": "BAW123", "value": ""}}
+{"text": "CSA1234 with you, 15000", "tags": {"intent": "checkin", "callsign": "CSA1234", "value": "15000"}}
+{"text": "OK-ABC descending 3000", "tags": {"intent": "readback_altitude", "callsign": "OK-ABC", "value": "3000"}}
+{"text": "DLH4EK turn left heading 240", "tags": {"intent": "readback_heading", "callsign": "DLH4EK", "value": "240"}}
+{"text": "DLH4EK request climb FL370", "tags": {"intent": "request_climb", "callsign": "DLH4EK", "value": "FL370"}}
+{"text": "RYR89AB descending FL100", "tags": {"intent": "readback_altitude", "callsign": "RYR89AB", "value": "FL100"}}
