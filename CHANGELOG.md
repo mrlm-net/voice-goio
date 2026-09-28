@@ -5,7 +5,11 @@ All notable changes to voice-goio. The format follows
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
-## [Unreleased]
+## [0.2.0] — 2026-09-28
+
+New public API — `voicegoio.TagReason` and the recording options on
+`audio.Options` — so this is a minor bump rather than a patch. Nothing was
+removed or changed shape, so upgrading from 0.1.2 needs no code changes.
 
 ### Added
 

@@ -2,7 +2,7 @@
 
 Offline voice input and output for an MSFS ATC application, as a Go library.
 
-**v0.1.0** — the platform-independent half is complete and tested; the two
+**v0.2.0** — the platform-independent half is complete and tested; the two
 Windows backends are written and cross-compile but have not yet run against
 real hardware. See [Platform status](#platform-status) before wiring it in.
 
@@ -297,7 +297,7 @@ Remove it, or drop the `replace`, before a release build. When the library
 settles:
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.1.0
+go get github.com/mrlm-net/voice-goio@v0.2.0
 ```
 
 ### What to wire first
@@ -330,5 +330,11 @@ first build.
 
 | Tag | Contents |
 |---|---|
-| `v0.1.0` | Everything platform-independent, complete and tested. Windows backends compile and are wired, but have not run against hardware. |
-| `v0.2.0` | After Windows bring-up: `stt/sapi` against a real engine, `winmm` against a real device, piper against the real binary. |
+| `v0.1.x` | Everything platform-independent, complete and tested. Windows backends compile and are wired, but have not run against hardware. |
+| `v0.2.0` | Adds the recognition failure reason (`TagReason`), session recording, and the emergency and deviation phraseology. Still no Windows bring-up. |
+| `v0.3.0` | After Windows bring-up: `stt/sapi` against a real engine, `winmm` against a real device, piper against the real binary. |
+
+SPEC.md §5 earmarked `v0.2.0` for the Windows bring-up. That number went to
+this release instead, because it adds public API and semantic versioning is
+about the API rather than the roadmap; the bring-up milestone is now
+`v0.3.0`.
