@@ -310,6 +310,11 @@ changes to it mean a `/v2` module path; anything else is additive.
 
 ## Versioning
 
+Requires Go 1.26 or newer. The `go` directive in `go.mod` is a floor on the
+consumer's toolchain, not a target, so it is set to the version the library is
+actually developed and tested on rather than to the oldest one that happens to
+compile.
+
 | Tag | Contents |
 |---|---|
 | `v0.1.0` | Everything platform-independent, complete and tested. Windows backends compile and are wired, but have not run against hardware. |

@@ -1,3 +1,3 @@
 module github.com/mrlm-net/voice-goio
 
-go 1.24
+go 1.26
