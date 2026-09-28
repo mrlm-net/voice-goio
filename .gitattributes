@@ -1,0 +1,9 @@
+# Go source must be LF everywhere. Without this, Git checks the repository out
+# with CRLF on Windows and `gofmt -l` then reports every file in the tree as
+# unformatted, because gofmt writes LF.
+* text=auto eol=lf
+
+# Binary assets, should any arrive.
+*.onnx binary
+*.wav  binary
+*.png  binary
