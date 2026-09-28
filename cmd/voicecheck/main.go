@@ -239,6 +239,9 @@ func cmdRecog(args []string) error {
 		backend = fs.String("backend", "fake", "fake or sapi")
 		script  = fs.String("script", filepath.Join("testdata", "stt", "readbacks.jsonl"), "corpus")
 		minPct  = fs.Float64("min", 95, "minimum percentage of exactly tagged phrases")
+		wavDir  = fs.String("wav", "", "render each phrase to a WAV here and feed the file to the engine, "+
+			"instead of waiting for someone to say it into a microphone (sapi only)")
+		ttsName = fs.String("tts", "", "tts backend used to render the phrases")
 	)
 	fs.Parse(args)
 
@@ -256,6 +259,9 @@ func cmdRecog(args []string) error {
 	case "fake":
 		return recogFake(lines, *minPct)
 	case "sapi":
+		if *wavDir != "" {
+			return recogSAPIFiles(lines, *minPct, *wavDir, *ttsName)
+		}
 		return recogSAPI(lines, *minPct)
 	default:
 		return fmt.Errorf("unknown backend %q", *backend)
@@ -337,6 +343,81 @@ func recogSAPI(lines []fake.ScriptLine, minPct float64) error {
 		fmt.Printf("  heard %q -> intent=%s callsign=%s value=%s conf=%.2f\n",
 			got.Text, got.Tags[voicegoio.TagIntent], got.Tags[voicegoio.TagCallsign],
 			got.Tags[voicegoio.TagValue], got.Confidence)
+	}
+	return report(exact, total, minPct)
+}
+
+// recogSAPIFiles is the unattended form of the corpus run: every phrase is
+// rendered to a WAV and played into the engine through SpFileStream, so the
+// same expected-tags file validates the Windows backend without a person
+// saying forty phrases into a headset (SPEC.md 4.5).
+func recogSAPIFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string) error {
+	if err := os.MkdirAll(wavDir, 0o755); err != nil {
+		return err
+	}
+	engine, name, err := tts.Open(tts.Options{Prefer: ttsName})
+	if err != nil {
+		return err
+	}
+	defer engine.Close()
+
+	rec, err := sapi.New(sapi.Options{})
+	if err != nil {
+		return err
+	}
+	defer rec.Close()
+
+	pool, err := loadPool("", "", 7)
+	if err != nil {
+		return err
+	}
+	// One voice for the whole corpus: this measures the grammar, not the
+	// engine's tolerance for different speakers. Vary the voice deliberately
+	// with a second run if that is what you want to measure.
+	voice := pool.Assign("EGLL", voicegoio.Approach)
+
+	fmt.Printf("rendering with %s, feeding files to the engine\n", name)
+	var total, exact int
+	for i, l := range lines {
+		if len(l.Callsigns) > 0 {
+			cs := make([]voicegoio.Callsign, 0, len(l.Callsigns))
+			for _, id := range l.Callsigns {
+				cs = append(cs, voicegoio.Callsign{ICAO: id})
+			}
+			if err := rec.SetCallsigns(cs); err != nil {
+				return err
+			}
+			fmt.Printf("on frequency: %s\n", strings.Join(l.Callsigns, " "))
+			continue
+		}
+		total++
+		path := filepath.Join(wavDir, fmt.Sprintf("%03d.wav", i))
+		pcm, err := engine.Synthesize(context.Background(), voice, l.Text)
+		if err != nil {
+			return fmt.Errorf("render %q: %w", l.Text, err)
+		}
+		if err := wav.WriteFile(path, pcm, engine.SampleRate(voice)); err != nil {
+			return err
+		}
+		got, err := rec.RecognizeFile(path)
+		if err != nil {
+			return fmt.Errorf("recognise %s: %w", path, err)
+		}
+		ok := tagsMatch(got.Tags, l.Tags)
+		if ok {
+			exact++
+		}
+		mark := "\x1b[31mFAIL\x1b[0m"
+		if ok {
+			mark = "\x1b[32m ok \x1b[0m"
+		}
+		fmt.Printf("%s %-52.52s intent=%-20s callsign=%-8s value=%-8s conf=%.2f\n",
+			mark, l.Text, got.Tags[voicegoio.TagIntent], got.Tags[voicegoio.TagCallsign],
+			got.Tags[voicegoio.TagValue], got.Confidence)
+		if !ok {
+			fmt.Printf("     want intent=%s callsign=%s value=%s\n",
+				l.Tags[voicegoio.TagIntent], l.Tags[voicegoio.TagCallsign], l.Tags[voicegoio.TagValue])
+		}
 	}
 	return report(exact, total, minPct)
 }

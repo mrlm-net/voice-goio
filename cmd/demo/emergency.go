@@ -40,8 +40,11 @@ type call struct {
 // is written here the way it would be said.
 func emergencyScript() []call {
 	return []call{
-		// Normal traffic first, so there is something to interrupt.
-		{fromTower, "DLH4EK RWY 27L cleared to land, wind 250 degrees 8 kt", "routine, before anything goes wrong"},
+		// Normal traffic first, so there is something to interrupt. DLH is
+		// given the distance on purpose: it is ten miles out, which is what
+		// puts the emergency at eight miles ahead of it rather than behind.
+		{fromTower, "DLH4EK number one, 10 miles final, RWY 27L cleared to land, wind 250 degrees 8 kt",
+			"routine, before anything goes wrong"},
 		{fromDLH, "cleared to land runway two seven left, Lufthansa four echo kilo", ""},
 
 		// The emergency, from an aircraft behind it on the same approach.
@@ -54,7 +57,8 @@ func emergencyScript() []call {
 
 		// The runway is needed, so the aircraft already cleared onto it goes.
 		{fromTower, "DLH4EK go around, I say again go around, climb 3000 ft, HDG 270, " +
-			"traffic emergency landing ahead of you", "the earlier clearance is taken back"},
+			"emergency traffic 8 miles final, now number one ahead of you",
+			"the earlier clearance is taken back; the emergency is ahead, not behind"},
 		{fromDLH, "going around, climb tree thousand feet, heading two seven zero, Lufthansa four echo kilo",
 			"a go-around outranks the altitude readback inside it"},
 		{fromTower, "DLH4EK contact Director on 119.720, expect vectors for a second approach", ""},
@@ -66,9 +70,19 @@ func emergencyScript() []call {
 			"the answer, with the count as the tag value"},
 		{fromTower, "BAW123 roger, one four seven souls, wind 250 degrees 8 kt, RWY 27L cleared to land", ""},
 
-		// Down.
+		// Down, and the part that does not end when the wheels stop.
 		{fromBAW, "Speedbird one two three, runway vacated", ""},
-		{fromTower, "BAW123 stop straight ahead, emergency services are with you", ""},
+		{fromTower, "BAW123 stop straight ahead on TWY A4, fire service is with you, " +
+			"do not shut down engines until advised", "the emergency does not end at touchdown"},
+		{fromBAW, "stopping on taxiway alpha four, Speedbird one two three", ""},
+		{fromTower, "BAW123 fire service reports no external fire, no smoke, " +
+			"you may shut down number two engine", ""},
+		{fromBAW, "shutting down number two, Speedbird one two three, " +
+			"request to remain on stand for engineering", ""},
+		{fromTower, "BAW123 roger, when ready follow the leader vehicle to stand 42, " +
+			"contact Ground on 121.905", ""},
+		{fromBAW, "following the leader vehicle to stand four two, " +
+			"one two one decimal niner zero fife, Speedbird one two three", ""},
 	}
 }
 
@@ -105,7 +119,7 @@ func (r *rig) emergency(o opts) error {
 	stationFor := map[speaker]*station{fromTower: &tower, fromBAW: &baw, fromDLH: &dlh}
 
 	fmt.Printf("\x1b[1mEmergency: two aircraft, one frequency, one runway\x1b[0m\n")
-	fmt.Printf("\x1b[2m%s on %s — BAW123 engine failure on final, DLH4EK already cleared to land\x1b[0m\n",
+	fmt.Printf("\x1b[2m%s on %s — DLH4EK cleared to land at 10 miles, BAW123 engine failure at 8 miles\x1b[0m\n",
 		tower.id, freq)
 	fmt.Printf("\x1b[2mthree voices share the frequency; nobody transmits over anybody\x1b[0m\n")
 

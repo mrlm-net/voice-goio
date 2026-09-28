@@ -109,6 +109,9 @@ func (p *Parser) Parse(text string) voicegoio.Recognition {
 	if value != "" {
 		rec.Tags[voicegoio.TagValue] = value
 	}
+	if intent == "readback_clearance" {
+		clearanceDetail(toks, rec.Tags)
+	}
 	// "descent to flight level one zero zero, Q N H one zero one tree" is one
 	// readback carrying two pieces of information. The intent is the descent;
 	// the pressure would otherwise be thrown away.
@@ -358,6 +361,18 @@ func parseBody(toks []string) (intent, value string) {
 	}
 
 	// --- readbacks -----------------------------------------------------
+	// A departure clearance readback, which SPEC.md 4.4 lists and which was
+	// missing: "cleared to Amsterdam via buzad one golf departure, climb
+	// flight level eight zero, squawk four tree two one". The squawk is the
+	// value because it is the element a wrong readback most often turns on;
+	// the SID and the level come back as secondary tags.
+	if isClearanceReadback(toks) {
+		if v, _ := digits(toks, indexAfter(toks, "squawk")); len(v) == 4 {
+			return "readback_clearance", v
+		}
+		return "readback_clearance", ""
+	}
+
 	if i, ok := any(toks, "climbing to", "descending to", "descent to", "climbing", "descending",
 		"climb to", "descend to", "maintaining", "maintain", "climb", "descend", "descent"); ok {
 		if v, _ := level(toks, skipWord(toks, i, "to")); v != "" {
@@ -571,6 +586,56 @@ func direction(toks []string) string {
 		}
 	}
 	return ""
+}
+
+// isClearanceReadback distinguishes a departure clearance from the other
+// things a pilot says "cleared" about. A landing or approach clearance is not
+// one, and is matched by its own rule above.
+func isClearanceReadback(toks []string) bool {
+	if !has(toks, "cleared", "clear") {
+		return false
+	}
+	if _, ok := phrase(toks, "to", "land"); ok {
+		return false
+	}
+	if has(toks, "approach", "takeoff", "take off") {
+		return false
+	}
+	if has(toks, "departure", "sid", "cleared via") {
+		return true
+	}
+	// "cleared to <somewhere>, squawk 4321" with no SID named.
+	if i, ok := any(toks, "squawk"); ok {
+		v, _ := digits(toks, i)
+		return len(v) == 4
+	}
+	return false
+}
+
+// indexAfter returns the position just past word, or len(toks) if absent.
+func indexAfter(toks []string, word string) int {
+	if i, ok := phrase(toks, word); ok {
+		return i
+	}
+	return len(toks)
+}
+
+// clearanceDetail pulls the SID and the cleared level out of a clearance
+// readback, for the application to check against what it issued.
+func clearanceDetail(toks []string, into map[string]string) {
+	if i, ok := phrase(toks, "departure"); ok && i >= 2 {
+		// The words before "departure" name the SID: "buzad one golf".
+		name := strings.ToUpper(toks[i-2])
+		if _, isDigit := digitWord[toks[i-2]]; isDigit && i >= 3 {
+			name = strings.ToUpper(toks[i-3])
+		}
+		if name != "" {
+			into["sid"] = name
+		}
+	}
+	if v := findLevel(toks); v != "" {
+		into["level"] = v
+	}
 }
 
 func has(toks []string, words ...string) bool {

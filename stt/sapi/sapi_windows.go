@@ -47,6 +47,7 @@ type Recognizer struct {
 	rec     comObject
 	ctx     comObject
 	gram    comObject
+	input   comObject // a file stream, when reading from a WAV rather than a mic
 	tmpGram string
 	got     bool // a result was delivered during the current PTT cycle
 }
@@ -486,10 +487,11 @@ func (r *Recognizer) teardown() {
 	if r.rec != nil {
 		r.rec.raw(recSetRecoState, sprstInactiveWithPurge)
 	}
+	r.input.release()
 	r.gram.release()
 	r.ctx.release()
 	r.rec.release()
-	r.gram, r.ctx, r.rec = nil, nil, nil
+	r.input, r.gram, r.ctx, r.rec = nil, nil, nil, nil
 	if r.tmpGram != "" {
 		os.Remove(r.tmpGram)
 	}

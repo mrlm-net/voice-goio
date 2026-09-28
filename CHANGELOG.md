@@ -5,6 +5,51 @@ All notable changes to voice-goio, an offline ATC voice library. The format foll
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
+## [0.3.0] — 2026-09-28
+
+Everything that can be done before a Windows machine is involved. The two
+Windows backends still have not run against hardware.
+
+### Added
+
+- `readback_clearance`: departure clearance readbacks, which SPEC.md 4.4 lists
+  and which were missing from both the parser and the grammar. The squawk is
+  the value, because it is the element a wrong readback most often turns on;
+  the SID and the cleared level come back as secondary tags. It is tested
+  before the altitude and squawk rules, since a clearance contains both.
+- `Recognizer.SetInputFile`, `SetInputMicrophone` and `RecognizeFile` on the
+  Windows backend, built on SAPI's `SpFileStream`. SPEC.md 4.5 wants one corpus
+  validated against both backends, and without this the SAPI half needs a
+  person saying every phrase into a headset.
+  `voicecheck recog -backend sapi -wav <dir>` renders each phrase and feeds the
+  file to the engine, so the corpus runs unattended.
+
+### Fixed
+
+- **Voice models downloaded into the working directory.** An empty
+  `PoolOptions.Dir` resolved to a relative path, so `voicecheck download` wrote
+  sixty megabytes of model into whatever directory it was run from — in
+  testing, the source tree. The voices package and the piper backend now share
+  one definition of the per-user data directory (`internal/userdir`) rather
+  than each having their own idea of it.
+- `piper.CheckFlags` could hang forever. It ran `--help` with no deadline, and
+  a piper that cannot start does not fail, it hangs — which is exactly what the
+  macOS build does on Apple Silicon. It now gives up after 20 seconds and says
+  the binary is probably the wrong architecture.
+- The emergency demo had its geometry backwards: an aircraft at eight miles
+  final was described as being ahead of one already cleared to land, and then
+  sent around for it. The cleared aircraft is now explicitly at ten miles, so
+  the emergency really is ahead of it. The aftermath continues past the
+  landing, through the fire service and the taxi to stand.
+
+### Known blocker
+
+piper still cannot be verified on an Apple Silicon Mac: the
+`piper_macos_aarch64.tar.gz` asset of release 2023.11.14-2 contains an x86_64
+binary, and under Rosetta it hangs producing no output at all. The Windows
+binary is native on the target platform, so that verification moves to the
+bring-up session.
+
 ## [0.2.0] — 2026-09-28
 
 New public API — `voicegoio.TagReason` and the recording options on

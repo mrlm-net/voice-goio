@@ -169,6 +169,19 @@
         <ruleref uri="#digits4"/>
         <tag>out.intent="readback_qnh"; out.value=rules.digits4;</tag>
       </item>
+      <item>
+        <!-- Departure clearance: the squawk is the value, because that is the
+             element a wrong readback most often turns on. -->
+        <one-of><item>cleared to</item><item>cleared via</item><item>cleared</item></one-of>
+        <ruleref uri="#fix"/>
+        <item repeat="0-1">via</item>
+        <item repeat="0-1"><ruleref uri="#fix"/></item>
+        <item repeat="0-1">departure</item>
+        <item repeat="0-1"><one-of><item>climb</item><item>climbing</item></one-of><ruleref uri="#level"/></item>
+        <one-of><item>squawk</item><item>squawking</item></one-of>
+        <ruleref uri="#digits4"/>
+        <tag>out.intent="readback_clearance"; out.value=rules.digits4;</tag>
+      </item>
     </one-of>
   </rule>
 

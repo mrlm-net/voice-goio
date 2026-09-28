@@ -24,6 +24,17 @@ func (r *Recognizer) Stop() error                             { return voicegoio
 func (r *Recognizer) Results() <-chan voicegoio.Recognition   { return nil }
 func (r *Recognizer) Close() error                            { return nil }
 
+// SetInputFile points the recogniser at a WAV file instead of a microphone.
+func (r *Recognizer) SetInputFile(string) error { return voicegoio.ErrNotImplemented }
+
+// SetInputMicrophone restores live audio input.
+func (r *Recognizer) SetInputMicrophone() error { return voicegoio.ErrNotImplemented }
+
+// RecognizeFile runs one recognition cycle over a WAV file.
+func (r *Recognizer) RecognizeFile(string) (voicegoio.Recognition, error) {
+	return voicegoio.Recognition{}, voicegoio.ErrNotImplemented
+}
+
 // InputDevices reports the microphones SAPI can use. Empty away from Windows.
 func InputDevices() ([]voicegoio.Device, error) { return nil, voicegoio.ErrNotImplemented }
 

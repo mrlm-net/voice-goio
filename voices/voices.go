@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	voicegoio "github.com/mrlm-net/voice-goio"
+	"github.com/mrlm-net/voice-goio/internal/userdir"
 )
 
 //go:embed voices.json
@@ -144,7 +145,8 @@ var permissiveLicences = map[string]bool{
 
 // PoolOptions configures assignment.
 type PoolOptions struct {
-	// Dir is where the model files live. Empty means the piper default.
+	// Dir is where the model files live. Empty means the per user data
+	// directory, never the current working directory.
 	Dir string
 	// Seed makes a session reproducible. 0 means a fixed default, so a run
 	// with no explicit seed is still deterministic.
@@ -169,6 +171,13 @@ type Pool struct {
 
 // NewPool prepares assignment over a manifest.
 func NewPool(m *Manifest, opt PoolOptions) *Pool {
+	if opt.Dir == "" {
+		// Without this, an empty Dir resolved to a relative path and the
+		// downloader wrote models into whatever directory the tool was run
+		// from. Sixty megabytes of model in a source tree is a bug, not a
+		// default.
+		opt.Dir = userdir.Voices()
+	}
 	if opt.Seed == 0 {
 		opt.Seed = 0x5643474F // "VCGO"
 	}

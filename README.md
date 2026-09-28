@@ -10,7 +10,7 @@ any particular simulator. There is no SimConnect here, no MSFS, no assumption
 about where the transmissions come from. An application hands it text and gets
 audio; it hands the application tags.
 
-**v0.2.0** — the platform-independent half is complete and tested; the two
+**v0.3.0** — the platform-independent half is complete and tested; the two
 Windows backends are written and cross-compile but have not yet run against
 real hardware. See [Platform status](#platform-status) before wiring it in.
 
@@ -147,6 +147,14 @@ Two things carry real risk and are called out rather than buried:
   `testdata/fakepiper`, which speaks the same protocol. The part to verify
   first is utterance framing (below) and whether the shipped binary accepts
   `length_scale` per JSON line (`piper.CheckFlags` reports this).
+
+  Verify it on Windows, not on an Apple Silicon Mac. The
+  `piper_macos_aarch64.tar.gz` asset of release 2023.11.14-2 contains an
+  **x86_64** binary despite its name (`file` says so, and `lipo -archs` agrees).
+  Under Rosetta it starts and then hangs indefinitely, producing no output at
+  all — not for `--help`, and not for a one-sentence synthesis with a model
+  that downloads and verifies correctly. `piper_windows_amd64.zip` is native on
+  the target platform, so the bring-up session is the place to do this.
 
 ## Prosody, emergencies and the ATIS
 
@@ -305,7 +313,7 @@ Remove it, or drop the `replace`, before a release build. When the library
 settles:
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.2.0
+go get github.com/mrlm-net/voice-goio@v0.3.0
 ```
 
 ### What to wire first
@@ -339,10 +347,11 @@ first build.
 | Tag | Contents |
 |---|---|
 | `v0.1.x` | Everything platform-independent, complete and tested. Windows backends compile and are wired, but have not run against hardware. |
-| `v0.2.0` | Adds the recognition failure reason (`TagReason`), session recording, and the emergency and deviation phraseology. Still no Windows bring-up. |
-| `v0.3.0` | After Windows bring-up: `stt/sapi` against a real engine, `winmm` against a real device, piper against the real binary. |
+| `v0.2.0` | Recognition failure reasons (`TagReason`), session recording, emergency and deviation phraseology. |
+| `v0.3.0` | Departure clearance readbacks, WAV input for the Windows recogniser so the corpus runs unattended, and a fix for models downloading into the working directory. |
 
-SPEC.md §5 earmarked `v0.2.0` for the Windows bring-up. That number went to
-this release instead, because it adds public API and semantic versioning is
-about the API rather than the roadmap; the bring-up milestone is now
-`v0.3.0`.
+Versions describe what changed, not what is planned. SPEC.md §5 earmarked
+`v0.2.0` for the Windows bring-up; that number went to an earlier release
+because it added API, and pre-assigning numbers to milestones turned out to be
+a way of being wrong twice. The bring-up will land in whatever version follows
+it.

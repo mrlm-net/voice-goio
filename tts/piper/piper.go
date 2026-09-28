@@ -27,6 +27,7 @@ import (
 	"time"
 
 	voicegoio "github.com/mrlm-net/voice-goio"
+	"github.com/mrlm-net/voice-goio/internal/userdir"
 )
 
 // Defaults for Options.
@@ -122,34 +123,8 @@ func DefaultPiperPath() string {
 	return filepath.Join(filepath.Dir(exe), "bin", "piper", name)
 }
 
-// DefaultVoicesDir is the per user data directory voices are downloaded into:
-// %LOCALAPPDATA%\voice-goio\voices on Windows,
-// ~/Library/Application Support/voice-goio/voices on macOS,
-// $XDG_DATA_HOME/voice-goio/voices elsewhere.
-func DefaultVoicesDir() string {
-	const app = "voice-goio"
-	switch runtime.GOOS {
-	case "windows":
-		if d := os.Getenv("LOCALAPPDATA"); d != "" {
-			return filepath.Join(d, app, "voices")
-		}
-	case "darwin":
-		if h, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(h, "Library", "Application Support", app, "voices")
-		}
-	default:
-		if d := os.Getenv("XDG_DATA_HOME"); d != "" {
-			return filepath.Join(d, app, "voices")
-		}
-		if h, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(h, ".local", "share", app, "voices")
-		}
-	}
-	if d, err := os.UserConfigDir(); err == nil {
-		return filepath.Join(d, app, "voices")
-	}
-	return filepath.Join(".", "voices")
-}
+// DefaultVoicesDir is the per user data directory voices are downloaded into.
+func DefaultVoicesDir() string { return userdir.Voices() }
 
 // DirResolver finds <model>.onnx and its .json anywhere under root, which is
 // the layout HuggingFace's piper-voices repository uses
@@ -333,8 +308,18 @@ func (t *TTS) Available() error {
 // assumed: older builds only take length_scale on the command line, in which
 // case a profile's prosody must select a separate process instead of a field.
 func CheckFlags(piperPath string) (perLineProsody bool, help string, err error) {
-	cmd := exec.Command(piperPath, "--help")
+	// Bounded, because a piper that cannot start does not fail — it hangs.
+	// The macOS build of 2023.11.14-2 does exactly that on Apple Silicon, and
+	// an unbounded CombinedOutput here would wedge the caller forever rather
+	// than report a broken install.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, piperPath, "--help")
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() != nil {
+		return false, string(out), fmt.Errorf("piper: %s did not respond to --help within 20s; "+
+			"the binary is probably the wrong architecture for this machine", piperPath)
+	}
 	help = string(out)
 	if err != nil && help == "" {
 		return false, "", fmt.Errorf("piper: --help: %w", err)

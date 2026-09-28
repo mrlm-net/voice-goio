@@ -38,3 +38,6 @@ go.work.sum
 # and would also exclude internal/wav, which is a package, not output.
 /wav/
 /wav-audit/
+
+# The piper binary, fetched not committed
+/bin/

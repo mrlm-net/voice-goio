@@ -54,3 +54,6 @@
 {"text": "Heathrow center, BAW123 15000 with you", "tags": {"intent": "checkin", "callsign": "BAW123", "value": "15000"}}
 {"text": "descent to FL100 QNH 1013 for CSA1234", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "FL100"}}
 {"text": "Speedbird one two three descending flight level one zero zero QNH one zero one tree", "tags": {"intent": "readback_altitude", "callsign": "BAW123", "value": "FL100"}}
+{"text": "cleared to Amsterdam via buzad one golf departure climb flight level eight zero squawk four tree two one Speedbird one two three", "tags": {"intent": "readback_clearance", "callsign": "BAW123", "value": "4321"}}
+{"text": "CSA1234 cleared to Prague squawk seven three two one", "tags": {"intent": "readback_clearance", "callsign": "CSA1234", "value": "7321"}}
+{"text": "OK-ABC cleared to land runway two seven left", "tags": {"intent": "readback_runway", "callsign": "OK-ABC", "value": "27L"}}

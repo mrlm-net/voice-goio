@@ -62,6 +62,12 @@ var (
 	iidISpRecognizer           = mustGUID("C2B5F241-DAA0-4507-9E16-5A1EAA2B7A5C")
 	clsidSpObjectTokenCategory = mustGUID("A910187F-0C7A-45AC-92CC-59EDAFB77B53")
 	iidISpObjectTokenCategory  = mustGUID("2D3D3845-39AF-4850-BBF9-40B49780011D")
+
+	// SpFileStream lets a WAV file stand in for the microphone, which is what
+	// makes the recognition corpus runnable without a human saying every
+	// phrase into a headset.
+	clsidSpFileStream = mustGUID("947812B3-2AE1-4644-BA86-9E90DED7EC91")
+	iidISpStream      = mustGUID("12E3CCA9-7518-44C5-A5E7-BA5A79CB929E")
 )
 
 // Registry category ids for the token enumerator.
@@ -140,6 +146,22 @@ const (
 	phGetPhrase = 3
 	phGetText   = 5
 	phDiscard   = 6
+)
+
+// ISpStream : ISpStreamFormat : ISequentialStream : IStream : IUnknown.
+// IStream contributes Read/Write (3..4), Seek/SetSize/CopyTo/Commit/Revert/
+// LockRegion/UnlockRegion/Stat/Clone (5..13); ISpStreamFormat adds
+// GetFormat (14); ISpStream's own methods follow.
+const (
+	spsSetBaseStream = 15
+	spsGetBaseStream = 16
+	spsBindToFile    = 17
+	spsClose         = 18
+)
+
+// SPFILEMODE values for ISpStream::BindToFile.
+const (
+	spfmOpenReadOnly = 1
 )
 
 // ISpObjectToken : ISpDataKey : IUnknown. ISpDataKey contributes 3..14.
