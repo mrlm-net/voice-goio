@@ -165,6 +165,11 @@
         <tag>out.intent="readback_taxi"; out.value=rules.route;</tag>
       </item>
       <item>
+        <one-of><item>continue approach</item><item>continuing approach</item></one-of>
+        <item repeat="0-1"><ruleref uri="#runway"/></item>
+        <tag>out.intent="readback_continue"; out.value="";</tag>
+      </item>
+      <item>
         <one-of><item>qnh</item><item>altimeter</item></one-of>
         <ruleref uri="#digits4"/>
         <tag>out.intent="readback_qnh"; out.value=rules.digits4;</tag>

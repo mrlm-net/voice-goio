@@ -5,6 +5,31 @@ All notable changes to voice-goio, an offline ATC voice library. The format foll
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
+## [0.3.1] — 2026-09-28
+
+No Go API change: the types and functions are identical to 0.3.0. What changed
+is one more recognised phrase, and the demo.
+
+### Added
+
+- `readback_continue`: "continue approach" is an instruction in its own right
+  and its readback carries no number, so nothing matched it and a perfectly
+  ordinary transmission came back as `say_again`. Applications switching on
+  intent already need a default branch, so a new value is additive.
+
+### Fixed
+
+- The emergency demo had its geometry backwards, again. The emergency is the
+  aircraft *behind*: number two at fifteen miles, five miles behind the one
+  that already has a landing clearance at ten. The aircraft in front is sent
+  around not because it is in the way at that moment, but because one that is
+  slow to vacate would leave the runway occupied when the emergency arrives.
+  The go-around now includes "fly runway heading", and the emergency aircraft
+  checks in as ordinary traffic before anything goes wrong.
+- Demo output folds at a fixed width with a hanging indent instead of wrapping
+  at the window edge, which destroyed the alignment that makes a transcript
+  readable at a glance.
+
 ## [0.3.0] — 2026-09-28
 
 Everything that can be done before a Windows machine is involved. The two

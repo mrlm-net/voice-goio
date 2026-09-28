@@ -148,8 +148,8 @@ func (r *rig) transmit(ctx context.Context, s station, text string) error {
 // say is transmit with the spoken form already decided, so a pilot call that
 // is written the way it is said can be played without being normalised twice.
 func (r *rig) say(ctx context.Context, s station, t voicegoio.Transmission, spoken string) error {
-	fmt.Printf("  \x1b[36m%-12s\x1b[0m %s\n", s.id, t.Text)
-	fmt.Printf("  %-12s \x1b[2m%s\x1b[0m\n", "", spoken)
+	printWrapped(s.id, "", t.Text)
+	printWrapped("", "\x1b[2m", spoken)
 
 	start := time.Now()
 	pcm, err := r.tts.Synthesize(ctx, s.voice, spoken)
@@ -160,11 +160,58 @@ func (r *rig) say(ctx context.Context, s station, t voicegoio.Transmission, spok
 
 	rate := r.tts.SampleRate(s.voice)
 	out := r.chain.Apply(pcm, rate, s.voice.Radio, r.player.SampleRate(), r.pool.Seed()+int64(len(t.Text)))
-	fmt.Printf("  %-12s \x1b[2m%s speaker %d | %s | radio %s | %d ms audio | synth %v\x1b[0m\n",
+	fmt.Printf("  %-12s \x1b[2m%s/%d · %s · %s · %.1fs · synth %v\x1b[0m\n",
 		"", s.voice.Model, s.voice.SpeakerID, orDefault(s.voice.Accent, "?"), s.voice.Radio,
-		len(out)*1000/r.player.SampleRate(), synth.Round(time.Millisecond))
+		float64(len(out))/float64(r.player.SampleRate()), synth.Round(time.Millisecond))
 
 	return r.player.Play(t, out, r.player.SampleRate())
+}
+
+// printWrapped prints one transmission under its speaker's name, folded at a
+// fixed width with a hanging indent.
+//
+// A clearance is often over a hundred characters, and a terminal that wraps it
+// at the window edge breaks the alignment that makes a transcript readable at
+// a glance — which is the whole reason this output exists.
+func printWrapped(label, style, text string) {
+	const (
+		indent = 15 // two spaces, a twelve-column label, a space
+		width  = 74
+	)
+	reset := ""
+	if style != "" {
+		reset = "\x1b[0m"
+	}
+	head := fmt.Sprintf("  \x1b[36m%-12s\x1b[0m ", label)
+	if label == "" {
+		head = fmt.Sprintf("  %-12s ", "")
+	}
+	for i, line := range fold(text, width) {
+		if i == 0 {
+			fmt.Printf("%s%s%s%s\n", head, style, line, reset)
+			continue
+		}
+		fmt.Printf("%*s%s%s%s\n", indent, "", style, line, reset)
+	}
+}
+
+// fold breaks text into lines of at most width characters, on word boundaries.
+func fold(text string, width int) []string {
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return []string{""}
+	}
+	var lines []string
+	line := words[0]
+	for _, w := range words[1:] {
+		if len(line)+1+len(w) > width {
+			lines = append(lines, line)
+			line = w
+			continue
+		}
+		line += " " + w
+	}
+	return append(lines, line)
 }
 
 // waitIdle drains playback events until every transmission has finished, which
@@ -358,9 +405,9 @@ func (r *rig) live(o opts) error {
 		if !ok {
 			return nil
 		}
-		fmt.Printf("  \x1b[35mrecognised\x1b[0m  intent=%s callsign=%s value=%s confidence=%.2f\n",
-			got.Tags[voicegoio.TagIntent], got.Tags[voicegoio.TagCallsign],
-			got.Tags[voicegoio.TagValue], got.Confidence)
+		fmt.Printf("  %-12s \x1b[35m→ %s · %s · %s · %.2f\x1b[0m\n", "",
+			got.Tags[voicegoio.TagIntent], orDefault(got.Tags[voicegoio.TagCallsign], "-"),
+			orDefault(got.Tags[voicegoio.TagValue], "-"), got.Confidence)
 		if err := r.transmit(ctx, twr, reply(got)); err != nil {
 			return err
 		}
@@ -407,6 +454,8 @@ func reply(rec voicegoio.Recognition) string {
 			return cs + " readback correct, QNH " + q
 		}
 		return cs + " readback correct, maintain " + spokenLevel(v)
+	case "readback_continue":
+		return cs + " roger, number two, expect landing clearance shortly"
 	case "readback_qnh":
 		return cs + " QNH " + v + " correct"
 	case "readback_speed":

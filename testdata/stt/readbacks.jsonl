@@ -57,3 +57,5 @@
 {"text": "cleared to Amsterdam via buzad one golf departure climb flight level eight zero squawk four tree two one Speedbird one two three", "tags": {"intent": "readback_clearance", "callsign": "BAW123", "value": "4321"}}
 {"text": "CSA1234 cleared to Prague squawk seven three two one", "tags": {"intent": "readback_clearance", "callsign": "CSA1234", "value": "7321"}}
 {"text": "OK-ABC cleared to land runway two seven left", "tags": {"intent": "readback_runway", "callsign": "OK-ABC", "value": "27L"}}
+{"text": "continue approach Speedbird one two three", "tags": {"intent": "readback_continue", "callsign": "BAW123", "value": ""}}
+{"text": "CSA1234 continuing approach runway two seven left", "tags": {"intent": "readback_continue", "callsign": "CSA1234", "value": "27L"}}

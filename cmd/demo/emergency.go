@@ -34,32 +34,46 @@ type call struct {
 }
 
 // emergencyScript is an engine failure on final at an airport with another
-// aircraft already cleared to land on the same runway.
+// aircraft ahead of it, already cleared to land on the same runway.
+//
+// The geometry matters and is easy to get wrong. The emergency is the aircraft
+// *behind*: number two at fifteen miles, five miles behind the aircraft that
+// already has a landing clearance. The one in front is sent around not because
+// it is in the way at that moment, but because a landing aircraft that is slow
+// to vacate would leave the runway occupied when the emergency arrives, and
+// that is not a risk anybody takes with an engine failure.
 //
 // The phraseology is the application's to get right, not the library's, so it
 // is written here the way it would be said.
 func emergencyScript() []call {
 	return []call{
-		// Normal traffic first, so there is something to interrupt. DLH is
-		// given the distance on purpose: it is ten miles out, which is what
-		// puts the emergency at eight miles ahead of it rather than behind.
+		// Routine first, so there is something to interrupt. DLH is number
+		// one at ten miles.
 		{fromTower, "DLH4EK number one, 10 miles final, RWY 27L cleared to land, wind 250 degrees 8 kt",
 			"routine, before anything goes wrong"},
 		{fromDLH, "cleared to land runway two seven left, Lufthansa four echo kilo", ""},
 
-		// The emergency, from an aircraft behind it on the same approach.
+		// BAW checks in normally, five miles behind DLH. Nothing is wrong yet.
+		{fromBAW, "Tower, Speedbird one two three, established ILS two seven left, one five miles final",
+			"the emergency aircraft checks in as ordinary traffic, number two"},
+		{fromTower, "BAW123 Tower, number two, continue approach, expect landing clearance shortly", ""},
+		{fromBAW, "continue approach, Speedbird one two three", ""},
+
+		// And then it is not ordinary traffic.
 		{fromBAW, "mayday mayday mayday, Speedbird one two three, engine failure, " +
-			"eight miles final, request immediate landing runway two seven left",
+			"one five miles final, request immediate landing runway two seven left",
 			"distress call: it outranks everything, roster or no roster"},
 		{fromTower, "BAW123 roger MAYDAY, RWY 27L cleared to land, wind 250 degrees 8 kt, " +
 			"emergency services on standby", ""},
 		{fromBAW, "cleared to land runway two seven left, Speedbird one two three", ""},
 
-		// The runway is needed, so the aircraft already cleared onto it goes.
-		{fromTower, "DLH4EK go around, I say again go around, climb 3000 ft, HDG 270, " +
-			"emergency traffic 8 miles final, now number one ahead of you",
-			"the earlier clearance is taken back; the emergency is ahead, not behind"},
-		{fromDLH, "going around, climb tree thousand feet, heading two seven zero, Lufthansa four echo kilo",
+		// The aircraft in front is sent around. Not because it is in the way
+		// now, but because the runway has to be guaranteed clear when the
+		// emergency arrives five miles behind it.
+		{fromTower, "DLH4EK go around, I say again go around, climb 3000 ft, fly runway heading, " +
+			"clearing the runway for an emergency aircraft 5 miles behind you",
+			"the earlier landing clearance is taken back to guarantee a clear runway"},
+		{fromDLH, "going around, climb tree thousand feet, runway heading, Lufthansa four echo kilo",
 			"a go-around outranks the altitude readback inside it"},
 		{fromTower, "DLH4EK contact Director on 119.720, expect vectors for a second approach", ""},
 		{fromDLH, "one one niner decimal seven two zero, Lufthansa four echo kilo", ""},
@@ -68,7 +82,7 @@ func emergencyScript() []call {
 		{fromTower, "BAW123 when able say souls on board and fuel remaining", ""},
 		{fromBAW, "Speedbird one two three, souls on board one four seven, fuel remaining fife thousand kilos",
 			"the answer, with the count as the tag value"},
-		{fromTower, "BAW123 roger, one four seven souls, wind 250 degrees 8 kt, RWY 27L cleared to land", ""},
+		{fromTower, "BAW123 roger, one four seven souls, runway is clear, wind 250 degrees 8 kt", ""},
 
 		// Down, and the part that does not end when the wheels stop.
 		{fromBAW, "Speedbird one two three, runway vacated", ""},
@@ -119,7 +133,7 @@ func (r *rig) emergency(o opts) error {
 	stationFor := map[speaker]*station{fromTower: &tower, fromBAW: &baw, fromDLH: &dlh}
 
 	fmt.Printf("\x1b[1mEmergency: two aircraft, one frequency, one runway\x1b[0m\n")
-	fmt.Printf("\x1b[2m%s on %s — DLH4EK cleared to land at 10 miles, BAW123 engine failure at 8 miles\x1b[0m\n",
+	fmt.Printf("\x1b[2m%s on %s — DLH4EK number one at 10 miles, BAW123 number two at 15 miles\x1b[0m\n",
 		tower.id, freq)
 	fmt.Printf("\x1b[2mthree voices share the frequency; nobody transmits over anybody\x1b[0m\n")
 
@@ -146,8 +160,8 @@ func (r *rig) emergency(o opts) error {
 			return err
 		}
 		got := <-rec.Results()
-		fmt.Printf("  %-12s \x1b[35m→ intent=%s callsign=%s value=%s conf=%.2f\x1b[0m\n",
-			"", got.Tags[voicegoio.TagIntent], orDefault(got.Tags[voicegoio.TagCallsign], "-"),
+		fmt.Printf("  %-12s \x1b[35m→ %s · %s · %s · %.2f\x1b[0m\n", "",
+			got.Tags[voicegoio.TagIntent], orDefault(got.Tags[voicegoio.TagCallsign], "-"),
 			orDefault(got.Tags[voicegoio.TagValue], "-"), got.Confidence)
 	}
 

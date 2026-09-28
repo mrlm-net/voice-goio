@@ -411,6 +411,16 @@ func parseBody(toks []string) (intent, value string) {
 			return "readback_qnh", v
 		}
 	}
+	if _, ok := any(toks, "continue approach", "continuing approach", "continue"); ok {
+		// "Continue approach" is an instruction in its own right. The runway
+		// is optional and, when given, follows the word "runway" rather than
+		// the phrase that matched.
+		v := ""
+		if j, found := any(toks, "runway"); found {
+			v = runway(toks, j)
+		}
+		return "readback_continue", v
+	}
 	if i, ok := any(toks, "taxiing via", "taxi via", "via"); ok {
 		if v := route(toks, i); v != "" {
 			return "readback_taxi", v
