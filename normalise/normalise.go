@@ -141,6 +141,9 @@ var plainWords = map[string]bool{
 	"LAND": true, "WITH": true, "THEN": true, "NEXT": true, "SLOW": true,
 	"FAST": true, "GATE": true, "PUSH": true, "EXIT": true, "BACK": true,
 	"OVER": true, "NOW": true, "SAY": true, "DUE": true, "ILL": true,
+	// The pronoun, as in "I say again". Without it a lone capital I is an
+	// identifier and comes out "india say again".
+	"I": true,
 }
 
 func (n *Normaliser) digit(b byte, ph voicegoio.Phraseology) string {

@@ -46,8 +46,10 @@ type Voice struct {
 // Catalogue is the curated set used when a VoiceProfile names a piper model
 // that has no explicit mapping. The order is stable, so assignment by speaker
 // index is deterministic across runs.
+// Catalogue is English only, for the reason given on accentVoice.
 var Catalogue = []Voice{
 	{"Daniel", "en-GB", "native"},
+	{"Albert", "en-US", "native"},
 	{"Karen", "en-AU", "native"},
 	{"Moira", "en-IE", "native"},
 	{"Rishi", "en-IN", "native"},
@@ -55,20 +57,14 @@ var Catalogue = []Voice{
 	{"Samantha", "en-US", "native"},
 	{"Ralph", "en-US", "native"},
 	{"Kathy", "en-US", "native"},
-	{"Albert", "en-US", "native"},
-	{"Anna", "en-DE", "non-native"},
-	{"Alice", "en-IT", "non-native"},
-	{"Ellen", "en-NL", "non-native"},
-	{"Zosia", "en-PL", "non-native"},
-	{"Zuzana", "en-CZ", "non-native"},
 	{"Fred", "en-ATIS", "machine"},
-	{"Thomas", "en-FR", "non-native"},
-	{"Monica", "en-ES", "non-native"},
 }
 
 // modelVoice maps the piper models named in SPEC.md 4.3 onto the closest macOS
 // voice, so the same VoiceProfile can be used on both platforms and only the
 // backend changes.
+// modelVoice maps single speaker piper models to a macOS voice. Non-English
+// models map to English voices for the reason on accentVoice.
 var modelVoice = map[string]string{
 	"en_GB-vctk-medium":             "Daniel",
 	"en_GB-alan-medium":             "Daniel",
@@ -84,14 +80,14 @@ var modelVoice = map[string]string{
 	"en_US-lessac-medium":           "Samantha",
 	"en_US-hfc_male-medium":         "Albert",
 	"en_US-hfc_female-medium":       "Kathy",
-	"de_DE-thorsten-medium":         "Anna",
-	"de_DE-mls-medium":              "Anna",
-	"nl_NL-mls-medium":              "Ellen",
-	"pl_PL-mls-medium":              "Zosia",
-	"fr_FR-mls-medium":              "Thomas",
-	"cs_CZ-jirka-medium":            "Zuzana",
-	"it_IT-riccardo-medium":         "Alice",
-	"es_ES-mls-medium":              "Monica",
+	"de_DE-thorsten-medium":         "Ralph",
+	"de_DE-mls-medium":              "Ralph",
+	"nl_NL-mls-medium":              "Daniel",
+	"pl_PL-mls-medium":              "Albert",
+	"fr_FR-mls-medium":              "Samantha",
+	"cs_CZ-jirka-medium":            "Kathy",
+	"it_IT-riccardo-medium":         "Moira",
+	"es_ES-mls-medium":              "Karen",
 }
 
 // accentFamilies groups the catalogue by the accent family a piper model
@@ -108,30 +104,54 @@ var modelVoice = map[string]string{
 var accentFamilies = map[string][]string{
 	"en-GB": {"Daniel", "Moira", "Rishi", "Karen", "Tessa"},
 	"en-US": {"Samantha", "Ralph", "Kathy", "Albert"},
-	"en-L2": {"Rishi", "Anna", "Alice", "Monica"},
-	"en-DE": {"Anna"},
-	"en-NL": {"Ellen"},
-	"en-PL": {"Zosia"},
-	"en-CZ": {"Zuzana"},
-	"en-FR": {"Thomas"},
-	"en-IT": {"Alice"},
-	"en-ES": {"Monica"},
+	"en-L2": {"Rishi", "Kathy", "Albert"},
+	"en-DE": {"Ralph"},
+	"en-NL": {"Daniel"},
+	"en-PL": {"Albert"},
+	"en-CZ": {"Kathy"},
+	"en-FR": {"Samantha"},
+	"en-IT": {"Moira"},
+	"en-ES": {"Karen"},
 }
 
 // accentVoice maps an accent label from the voice manifest onto the macOS
 // voice that stands in for it.
+//
+// Every voice here is an English one. That is not a simplification, it is the
+// rule from SPEC.md 4.3: never feed English through a non-English phonemizer.
+// macOS ships Czech, German and Polish voices, and handing them English text
+// makes them phonemise it as Czech, German or Polish — which is not a non-native
+// accent, it is mispronunciation.
+//
+// Piper does this properly, and differently: the swap trick phonemises the
+// English correctly and only borrows the foreign model's timbre. macOS has no
+// equivalent, so on this backend a non-native accent falls back to an English
+// voice, and the accents you can actually hear here are the native ones.
 var accentVoice = map[string]string{
 	"en-GB": "Daniel", "en-GB-north": "Daniel", "en-GB-south": "Karen",
 	"en-GB-scottish": "Moira", "en-IE": "Moira",
 	"en-US": "Samantha", "en-CA": "Ralph",
 	"en-AU": "Karen", "en-NZ": "Karen",
 	"en-IN": "Rishi", "en-ZA": "Tessa", "en-L2": "Rishi",
-	"en-DE": "Anna", "en-NL": "Ellen", "en-PL": "Zosia", "en-CZ": "Zuzana",
-	"en-FR": "Thomas", "en-IT": "Alice", "en-ES": "Monica",
-	"en-CN": "Alice", "en-AR": "Monica", "en-KO": "Rishi", "en-VI": "Rishi",
+
+	// Non-native accents. English voices, chosen to stay distinguishable from
+	// each other; the accent itself is not reproducible on this backend.
+	"en-DE": "Ralph", "en-NL": "Daniel", "en-PL": "Albert", "en-CZ": "Kathy",
+	"en-FR": "Samantha", "en-IT": "Moira", "en-ES": "Karen",
+	"en-CN": "Kathy", "en-AR": "Albert", "en-KO": "Rishi", "en-VI": "Rishi",
+
 	// An ATIS is a machine reading a template on a loop. Fred is the flattest,
 	// most synthetic voice macOS ships, which is exactly right for it.
 	"en-ATIS": "Fred",
+}
+
+// NonNativeAccents are the accent labels this backend cannot reproduce. They
+// are spoken by an English voice instead, and only piper renders them as the
+// accents they are.
+var NonNativeAccents = map[string]bool{
+	"en-DE": true, "en-NL": true, "en-PL": true, "en-CZ": true,
+	"en-FR": true, "en-IT": true, "en-ES": true, "en-L2": true,
+	"en-CN": true, "en-AR": true, "en-KO": true, "en-VI": true,
 }
 
 // family maps a piper model name onto its accent family key.

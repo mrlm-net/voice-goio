@@ -69,3 +69,4 @@ PAN PAN PAN PAN PAN PAN OK-ABC low fuel | pan pan, pan pan, pan pan, oscar kilo 
 OK-ABC taxi to RWY 27L at A1 via TWY A3 and B | oscar kilo alpha bravo charlie, taxi to runway two seven left at alpha one, via taxiway alpha tree, bravo
 OK-ABC taxi to stand 42 via TWY B | oscar kilo alpha bravo charlie, taxi to stand four two, via taxiway bravo
 BAW123 RWY 27L at A1 cleared for takeoff | Speedbird one two tree, runway two seven left at alpha one, cleared for takeoff
+DLH4EK go around, I say again go around | Lufthansa four echo kilo, go around, i say again go around

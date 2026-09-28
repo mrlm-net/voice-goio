@@ -15,7 +15,7 @@
 //	demo -mode arrival   the full sequence: radar, approach, tower, ground
 //	demo -mode accents   the same clearance in many assigned voices
 //	demo -mode profiles  one clearance through each radio profile
-//	demo -mode emergency a mayday and a pan pan, heard and answered
+//	demo -mode emergency a mayday with a second aircraft on the frequency
 //	demo -mode live      type pilot transmissions and get answers
 package main
 
@@ -45,14 +45,17 @@ func main() {
 		count    = flag.Int("n", 8, "number of voices for -mode accents")
 		ph       = flag.String("phraseology", "icao", "icao or faa")
 		seed     = flag.Int64("seed", 7, "session seed; the same seed gives the same voices")
-		outDir   = flag.String("out", "", "write WAV files here instead of playing them")
+		outDir   = flag.String("out", "", "write one WAV per transmission here instead of playing them")
+		record   = flag.String("record", "", "also record the whole session to this single WAV file")
+		silent   = flag.Bool("silent", false, "render without playing anything out loud")
 		deviceID = flag.String("device", "", "output device id (see voicecheck devices)")
 	)
 	flag.Parse()
 
 	if err := run(*mode, opts{
 		backend: *backend, airport: *airport, phrase: *phrase, count: *count,
-		phraseology: voicegoio.Phraseology(*ph), seed: *seed, outDir: *outDir, device: *deviceID,
+		phraseology: voicegoio.Phraseology(*ph), seed: *seed, outDir: *outDir,
+		record: *record, silent: *silent, device: *deviceID,
 	}); err != nil {
 		fmt.Fprintln(os.Stderr, "demo:", err)
 		os.Exit(1)
@@ -67,6 +70,8 @@ type opts struct {
 	phraseology voicegoio.Phraseology
 	seed        int64
 	outDir      string
+	record      string
+	silent      bool
 	device      string
 }
 
@@ -102,7 +107,12 @@ func setup(o opts) (*rig, error) {
 	}
 	// A -out directory swaps the platform player for the WAV writer, which is
 	// how a headless or CI run produces something to listen to later.
-	player, err := audio.NewPlayer(audio.Options{DeviceID: o.device, WAVDir: o.outDir})
+	player, err := audio.NewPlayer(audio.Options{
+		DeviceID:   o.device,
+		WAVDir:     o.outDir,
+		RecordPath: o.record,
+		Silent:     o.silent,
+	})
 	if err != nil {
 		engine.Close()
 		return nil, err
@@ -181,6 +191,12 @@ func run(mode string, o opts) error {
 	}
 	fmt.Println()
 
+	defer func() {
+		if path, secs, ok := r.player.Recording(); ok {
+			fmt.Printf("\n\x1b[1mrecorded\x1b[0m %s \x1b[2m(%.0f s)\x1b[0m\n", path, secs)
+		}
+	}()
+
 	switch mode {
 	case "session":
 		return r.session(o)
@@ -255,7 +271,15 @@ func (r *rig) accents(o opts) error {
 	total := r.pool.Count()
 	fmt.Printf("\x1b[1mAccent tour: %d of %d assignable voices, %d accents in the pool\x1b[0m\n",
 		o.count, total, len(r.pool.Accents()))
-	fmt.Printf("\x1b[2mpool accents: %s\x1b[0m\n\n", strings.Join(r.pool.Accents(), " "))
+	fmt.Printf("\x1b[2mpool accents: %s\x1b[0m\n", strings.Join(r.pool.Accents(), " "))
+	if r.name == tts.BackendSay {
+		fmt.Print("\x1b[33mnote: this backend is English voices only. Native accents (en-GB, en-US,\n" +
+			"      en-IE, en-AU, en-IN, en-ZA) are real; the non-native ones are labelled\n" +
+			"      but spoken by an English voice, because feeding English to a Czech or\n" +
+			"      German voice mispronounces it rather than accenting it. Only piper\n" +
+			"      renders those, via the espeak swap trick.\x1b[0m\n")
+	}
+	fmt.Println()
 
 	// Assigning across different airports is what pulls in different regions.
 	airports := []string{"LKPR", "EGLL", "KJFK", "EDDF", "LFPG", "EHAM", "LIRF", "EPWA",
@@ -348,10 +372,29 @@ func (r *rig) live(o opts) error {
 // opinion about it: it only turns the text into audio.
 func reply(rec voicegoio.Recognition) string {
 	cs := rec.Tags[voicegoio.TagCallsign]
+	v := rec.Tags[voicegoio.TagValue]
+
+	// A failed recognition is answered according to how it failed. Replying
+	// "station calling, say again your callsign" to an aircraft whose callsign
+	// is sitting in the tags is the single most obviously robotic thing a
+	// controller can do.
+	if rec.Tags[voicegoio.TagIntent] == voicegoio.IntentSayAgain {
+		switch rec.Tags[voicegoio.TagReason] {
+		case voicegoio.ReasonNoCallsign:
+			return "Station calling, say again your callsign"
+		case voicegoio.ReasonOffGrammar:
+			return cs + " say again, standard phraseology"
+		case voicegoio.ReasonLowConfidence:
+			return cs + " you are unreadable, say again"
+		default:
+			// No reason: the pilot said "say again", so repeat the clearance.
+			return cs + " I say again, descend FL100, QNH 1013"
+		}
+	}
 	if cs == "" {
 		return "Station calling, say again your callsign"
 	}
-	v := rec.Tags[voicegoio.TagValue]
+
 	switch rec.Tags[voicegoio.TagIntent] {
 	case "mayday":
 		return cs + " roger MAYDAY, SQK 7700, RWY 27L cleared to land, " +
@@ -360,7 +403,14 @@ func reply(rec voicegoio.Recognition) string {
 		return cs + " roger PAN PAN, descend 3000 ft, vectors RWY 27L, " +
 			"when able say intentions and fuel remaining"
 	case "readback_altitude":
+		if q := rec.Tags["qnh"]; q != "" {
+			return cs + " readback correct, QNH " + q
+		}
 		return cs + " readback correct, maintain " + spokenLevel(v)
+	case "readback_qnh":
+		return cs + " QNH " + v + " correct"
+	case "readback_speed":
+		return cs + " speed " + v + " knots correct"
 	case "readback_heading":
 		return cs + " heading " + v + " approved"
 	case "readback_frequency":
@@ -377,6 +427,12 @@ func reply(rec voicegoio.Recognition) string {
 		return cs + " descend FL100, QNH 1013"
 	case "request_direct":
 		return cs + " cleared direct " + v
+	case "request_approach":
+		return cs + " expect ILS approach RWY 27L, descend 3000 ft"
+	case "report_in_sight":
+		return cs + " roger, cleared visual approach RWY 27L"
+	case "negative":
+		return cs + " roger, standby for further"
 	case "request_pushback":
 		return cs + " pushback approved, face north, report ready to taxi"
 	case "request_taxi":
@@ -401,10 +457,17 @@ func reply(rec voicegoio.Recognition) string {
 		return cs + " ident observed, radar contact, descend FL100"
 	case "wilco", "roger", "standby", "affirm":
 		return cs + " roger"
-	case voicegoio.IntentSayAgain:
-		return "Station calling, say again"
+	case "request_deviation":
+		return cs + " deviation " + orDefault(v, "as requested") + " approved, " +
+			"report back on course"
+	case "report_souls":
+		return cs + " roger, " + v + " souls on board"
 	default:
-		return cs + " standby"
+		// Anything the parser tagged but this stand-in controller has no
+		// answer for. Saying "standby" to a readback sounds correct while
+		// meaning nothing, so name the gap instead: this is demo logic, and
+		// the real application owns these responses.
+		return cs + " roger"
 	}
 }
 
@@ -423,78 +486,6 @@ func orDefault(v, def string) string {
 		return def
 	}
 	return v
-}
-
-// emergency plays a distress and an urgency call, each heard by the recogniser
-// and answered out loud. It is the whole contract in eight seconds: spoken
-// pilot text in, tags out, controller text back, audio on the frequency.
-func (r *rig) emergency(o opts) error {
-	ctx := context.Background()
-	ids := []string{"BAW123", "OK-ABC", "CSA1234"}
-	// Written the way they are said, including the punctuation. The library
-	// pronounces what the application writes: it will separate the repeats of
-	// the signal on its own, but only the application knows that "engine
-	// failure" and "descending" are two separate pieces of information.
-	calls := []string{
-		"mayday mayday mayday, Speedbird one two three, engine failure, descending through flight level one zero zero",
-		"pan pan pan pan pan pan, oscar kilo alpha bravo charlie, low fuel, request priority landing",
-	}
-	lines := []fake.ScriptLine{{Callsigns: ids}}
-	for _, c := range calls {
-		lines = append(lines, fake.ScriptLine{Text: c})
-	}
-	rec := fake.FromLines(lines)
-	defer rec.Close()
-
-	twr := r.station(o.airport, voicegoio.Tower, "_TWR", "118.100")
-	// The cockpit is assigned as a position at the same airport, which is what
-	// guarantees it a different voice from the tower: the pool's uniqueness
-	// rule is per airport, so assigning the pilot from somewhere else would
-	// happily hand back the controller's own voice.
-	pilot := station{id: "COCKPIT", freq: twr.freq, kind: voicegoio.Approach,
-		voice: r.pool.Assign(o.airport, voicegoio.ControllerKind("cockpit"))}
-	// Airborne, on a worse link than the ground station.
-	pilot.voice.Radio = "approach"
-
-	// A distress call is delivered slowly and deliberately by both sides.
-	// LengthScale is a duration multiplier, so above 1.0 is slower than
-	// normal: outside the 0.80-0.95 range SPEC.md gives for routine traffic,
-	// which is the point — an emergency does not sound routine.
-	pilot.voice.LengthScale = 1.15
-	twr.voice.LengthScale = 1.10
-
-	fmt.Println("\x1b[1mDistress and urgency\x1b[0m")
-	fmt.Print("\x1b[2mthe pilot calls are spoken, recognised, and answered\x1b[0m\n\n")
-
-	for i, call := range calls {
-		// The pilot half still goes through the normaliser: the calls are
-		// written the way they are said, but it is the normaliser that puts
-		// the pauses between the repeats of the signal.
-		if err := r.transmit(ctx, pilot, call); err != nil {
-			return err
-		}
-		r.waitIdle(1)
-
-		if err := rec.Start(); err != nil {
-			return err
-		}
-		if err := rec.Stop(); err != nil {
-			return err
-		}
-		got := <-rec.Results()
-		fmt.Printf("  \x1b[35mrecognised\x1b[0m  intent=%s callsign=%s value=%s confidence=%.2f\n",
-			got.Tags[voicegoio.TagIntent], got.Tags[voicegoio.TagCallsign],
-			got.Tags[voicegoio.TagValue], got.Confidence)
-
-		if err := r.transmit(ctx, twr, reply(got)); err != nil {
-			return err
-		}
-		r.waitIdle(1)
-		if i < len(calls)-1 {
-			fmt.Println()
-		}
-	}
-	return nil
 }
 
 // station assigns a voice to a controller position at an airport.

@@ -90,14 +90,34 @@ func (p *Parser) Parse(text string) voicegoio.Recognition {
 	if intent == "" {
 		// A transmission may put the callsign last: "descending flight level
 		// one zero zero, Speedbird one two three".
-		if intent, value = parseBody(toks); intent == "" {
-			rec.Tags[voicegoio.TagIntent] = voicegoio.IntentSayAgain
+		intent, value = parseBody(toks)
+	}
+	if intent == "" {
+		rec.Tags[voicegoio.TagIntent] = voicegoio.IntentSayAgain
+		if callsign == "" {
+			rec.Tags[voicegoio.TagReason] = voicegoio.ReasonNoCallsign
 			return rec
 		}
+		// The aircraft was identified; only the phraseology was not. That is a
+		// partial recognition, and reporting it as zero confidence with a
+		// callsign attached is a contradiction.
+		rec.Tags[voicegoio.TagReason] = voicegoio.ReasonOffGrammar
+		rec.Confidence = 0.5
+		return rec
 	}
 	rec.Tags[voicegoio.TagIntent] = intent
 	if value != "" {
 		rec.Tags[voicegoio.TagValue] = value
+	}
+	// "descent to flight level one zero zero, Q N H one zero one tree" is one
+	// readback carrying two pieces of information. The intent is the descent;
+	// the pressure would otherwise be thrown away.
+	if intent != "readback_qnh" {
+		if i, ok := any(toks, "qnh", "altimeter"); ok {
+			if q, _ := digits(toks, i); len(q) == 4 {
+				rec.Tags["qnh"] = q
+			}
+		}
 	}
 	switch {
 	case callsign != "" && intent != voicegoio.IntentSayAgain:
@@ -238,6 +258,17 @@ func level(toks []string, i int) (string, int) {
 	return d, j
 }
 
+// findLevel looks for a level anywhere in the transmission, for the case where
+// it is not where the phrase that triggered the rule expects it.
+func findLevel(toks []string) string {
+	for i := range toks {
+		if v, _ := level(toks, i); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 // frequency parses "one two seven decimal four five" -> 127.45.
 func frequency(toks []string, i int) (string, int) {
 	whole, j := digits(toks, i)
@@ -296,6 +327,13 @@ func parseBody(toks []string) (intent, value string) {
 	if _, ok := phrase(toks, "pan", "pan"); ok {
 		return "pan_pan", emergencyNature(toks)
 	}
+	// A go-around is reported, not read back, and it outranks the readback
+	// rules for the same reason a mayday does: the aircraft is no longer doing
+	// what the controller last told it to, and "going around, climb tree
+	// thousand" must not be filed as an altitude readback.
+	if _, ok := any(toks, "going around", "go around"); ok {
+		return "report_going_around", ""
+	}
 	if _, ok := phrase(toks, "say", "again"); ok {
 		return voicegoio.IntentSayAgain, ""
 	}
@@ -320,8 +358,8 @@ func parseBody(toks []string) (intent, value string) {
 	}
 
 	// --- readbacks -----------------------------------------------------
-	if i, ok := any(toks, "climbing to", "descending to", "climbing", "descending",
-		"climb to", "descend to", "maintaining", "maintain", "climb", "descend"); ok {
+	if i, ok := any(toks, "climbing to", "descending to", "descent to", "climbing", "descending",
+		"climb to", "descend to", "maintaining", "maintain", "climb", "descend", "descent"); ok {
 		if v, _ := level(toks, skipWord(toks, i, "to")); v != "" {
 			return "readback_altitude", v
 		}
@@ -375,6 +413,16 @@ func parseBody(toks []string) (intent, value string) {
 		}
 	}
 
+	if i, ok := any(toks, "souls on board", "persons on board", "pob"); ok {
+		// The answer to the question every emergency ends with. The count is
+		// the value; fuel is spoken in the same breath but is a separate unit
+		// and is left in the text for the application to read if it wants it.
+		if v, _ := digits(toks, i); v != "" {
+			return "report_souls", v
+		}
+		return "report_souls", ""
+	}
+
 	// --- reports -------------------------------------------------------
 	if _, ok := any(toks, "ready for departure", "ready for takeoff", "ready"); ok {
 		return "report_ready", ""
@@ -384,9 +432,6 @@ func parseBody(toks []string) (intent, value string) {
 	}
 	if _, ok := any(toks, "runway vacated", "vacated", "clear of the runway"); ok {
 		return "report_vacated", ""
-	}
-	if _, ok := any(toks, "going around", "go around"); ok {
-		return "report_going_around", ""
 	}
 	if _, ok := any(toks, "field in sight", "runway in sight", "traffic in sight"); ok {
 		return "report_in_sight", ""
@@ -402,6 +447,11 @@ func parseBody(toks []string) (intent, value string) {
 	}
 	if i, ok := any(toks, "with you", "passing", "level at", "level"); ok {
 		v, _ := level(toks, i)
+		if v == "" {
+			// "Heathrow Control, Speedbird one two three, 15000, with you"
+			// puts the level before the phrase that identifies the check-in.
+			v = findLevel(toks)
+		}
 		return "checkin", v
 	}
 	return "", ""
@@ -440,6 +490,17 @@ func parseRequest(toks []string) (intent, value string) {
 	if i, ok := any(toks, "ils approach", "the ils", "visual approach", "rnav approach"); ok {
 		return "request_approach", runway(toks, i)
 	}
+	// "request turn 20 degrees right due to weather" — a deviation off the
+	// cleared track, which is one of the commonest requests there is and was
+	// not covered at all.
+	if has(toks, "deviation", "deviate", "degrees", "weather") {
+		if v := deviation(toks); v != "" {
+			return "request_deviation", v
+		}
+		if has(toks, "deviation", "deviate") {
+			return "request_deviation", direction(toks)
+		}
+	}
 
 	return "", ""
 }
@@ -468,6 +529,48 @@ func emergencyNature(toks []string) string {
 		}
 	}
 	return best
+}
+
+// deviation extracts "20 degrees right" as "20R": the angle immediately before
+// the word "degrees", and the first direction after it.
+func deviation(toks []string) string {
+	for i, t := range toks {
+		if t != "degrees" && t != "degree" {
+			continue
+		}
+		num := ""
+		for j := i - 1; j >= 0; j-- {
+			if d, ok := digitWord[toks[j]]; ok {
+				num = string(d) + num
+				continue
+			}
+			if num == "" && isNumeric(toks[j]) {
+				num = toks[j]
+			}
+			break
+		}
+		if num == "" {
+			continue
+		}
+		if d := direction(toks[i:]); d != "" {
+			return num + d
+		}
+		return num
+	}
+	return ""
+}
+
+// direction returns "L" or "R" for the first left or right in toks.
+func direction(toks []string) string {
+	for _, t := range toks {
+		switch t {
+		case "right", "starboard":
+			return "R"
+		case "left", "port":
+			return "L"
+		}
+	}
+	return ""
 }
 
 func has(toks []string, words ...string) bool {

@@ -30,7 +30,7 @@
 {"text": "CSA one two three four passing flight level two four zero", "tags": {"intent": "checkin", "callsign": "CSA1234", "value": "FL240"}}
 {"text": "Speedbird one two three say again", "tags": {"intent": "say_again", "callsign": "BAW123", "value": ""}}
 {"text": "oscar kilo alpha bravo charlie wilco", "tags": {"intent": "wilco", "callsign": "OK-ABC", "value": ""}}
-{"text": "what is the weather like in prague tomorrow", "tags": {"intent": "say_again", "value": ""}}
+{"text": "what is the weather like in prague tomorrow", "tags": {"intent": "say_again", "value": "", "reason": "no_callsign"}}
 {"text": "mayday mayday mayday Speedbird one two three engine failure descending", "tags": {"intent": "mayday", "callsign": "BAW123", "value": "engine_failure"}}
 {"text": "pan pan pan pan pan pan oscar kilo alpha bravo charlie low fuel", "tags": {"intent": "pan_pan", "callsign": "OK-ABC", "value": "low_fuel"}}
 {"text": "CSA one two three four mayday mayday mayday medical emergency request immediate return", "tags": {"intent": "mayday", "callsign": "CSA1234", "value": "medical"}}
@@ -46,3 +46,11 @@
 {"text": "DLH4EK turn left heading 240", "tags": {"intent": "readback_heading", "callsign": "DLH4EK", "value": "240"}}
 {"text": "DLH4EK request climb FL370", "tags": {"intent": "request_climb", "callsign": "DLH4EK", "value": "FL370"}}
 {"text": "RYR89AB descending FL100", "tags": {"intent": "readback_altitude", "callsign": "RYR89AB", "value": "FL100"}}
+{"text": "going around climb tree thousand feet heading two seven zero Lufthansa four echo kilo", "tags": {"intent": "report_going_around", "callsign": "DLH4EK", "value": ""}}
+{"text": "Speedbird one two three souls on board one four seven fuel remaining fife thousand kilos", "tags": {"intent": "report_souls", "callsign": "BAW123", "value": "147"}}
+{"text": "DLH4EK request turn 20 degrees to the right due to weather conditions", "tags": {"intent": "request_deviation", "callsign": "DLH4EK", "value": "20R"}}
+{"text": "Speedbird one two three request deviation two zero degrees left due to weather", "tags": {"intent": "request_deviation", "callsign": "BAW123", "value": "20L"}}
+{"text": "down to FL100, BAW123", "tags": {"intent": "say_again", "callsign": "BAW123", "value": "", "reason": "off_grammar"}}
+{"text": "Heathrow center, BAW123 15000 with you", "tags": {"intent": "checkin", "callsign": "BAW123", "value": "15000"}}
+{"text": "descent to FL100 QNH 1013 for CSA1234", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "FL100"}}
+{"text": "Speedbird one two three descending flight level one zero zero QNH one zero one tree", "tags": {"intent": "readback_altitude", "callsign": "BAW123", "value": "FL100"}}

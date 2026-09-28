@@ -68,6 +68,10 @@ demo-accents:
 demo-profiles:
 	$(GO) run ./cmd/demo -mode profiles
 
+.PHONY: demo-emergency
+demo-emergency:
+	$(GO) run ./cmd/demo -mode emergency
+
 .PHONY: demo-live
 demo-live:
 	$(GO) run ./cmd/demo -mode live
@@ -75,6 +79,19 @@ demo-live:
 .PHONY: wav
 wav:
 	$(GO) run ./cmd/voicecheck synth -out wav -limit 8
+
+# Render every demo to a single WAV each, for sending to somebody. Nothing is
+# played out loud: rendering five demos takes minutes, and you do not want to
+# sit through them.
+.PHONY: demo-wav
+demo-wav:
+	@mkdir -p wav
+	@for mode in arrival session emergency profiles accents; do \
+		printf "rendering %-10s" $$mode; \
+		$(GO) run ./cmd/demo -mode $$mode -silent -record wav/demo-$$mode.wav > wav/demo-$$mode.txt; \
+		echo "$$(tail -1 wav/demo-$$mode.txt)"; \
+	done
+	@ls -lh wav/demo-*.wav
 
 # --- quality bars -----------------------------------------------------------
 

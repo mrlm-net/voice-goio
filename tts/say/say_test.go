@@ -19,8 +19,8 @@ func TestVoiceStaysInItsAccentFamily(t *testing.T) {
 			t.Errorf("en_GB-vctk-medium speaker %d mapped to %q, which VCTK does not contain", id, got)
 		}
 	}
-	if got := voiceFor(Options{}, voicegoio.VoiceProfile{Model: "cs_CZ-jirka-medium"}); got != "Zuzana" {
-		t.Errorf("Czech model mapped to %q, want Zuzana", got)
+	if got := voiceFor(Options{}, voicegoio.VoiceProfile{Model: "cs_CZ-jirka-medium"}); got != "Kathy" {
+		t.Errorf("Czech model mapped to %q, want an English voice", got)
 	}
 	if got := voiceFor(Options{}, voicegoio.VoiceProfile{Model: "en_US-ryan-medium"}); got != "Ralph" {
 		t.Errorf("en_US-ryan-medium mapped to %q, want the explicit Ralph mapping", got)
@@ -57,13 +57,46 @@ func TestRateFromLengthScale(t *testing.T) {
 	}
 }
 
+// SPEC.md 4.3: never feed English through a non-English phonemizer. macOS
+// ships Czech, German and Polish voices, and giving them English text makes
+// them mispronounce it rather than accent it. Every voice this backend can
+// select must be an English one.
+func TestEveryVoiceIsEnglish(t *testing.T) {
+	english := map[string]bool{
+		"Daniel": true, "Moira": true, "Karen": true, "Tessa": true, "Rishi": true,
+		"Samantha": true, "Ralph": true, "Kathy": true, "Albert": true, "Fred": true,
+	}
+	for accent, voice := range accentVoice {
+		if !english[voice] {
+			t.Errorf("accent %q maps to %q, which is not an English voice", accent, voice)
+		}
+	}
+	for model, voice := range modelVoice {
+		if !english[voice] {
+			t.Errorf("model %q maps to %q, which is not an English voice", model, voice)
+		}
+	}
+	for _, v := range Catalogue {
+		if !english[v.Name] {
+			t.Errorf("catalogue voice %q is not English", v.Name)
+		}
+	}
+	for fam, names := range accentFamilies {
+		for _, n := range names {
+			if !english[n] {
+				t.Errorf("family %q references %q, which is not an English voice", fam, n)
+			}
+		}
+	}
+}
+
 func TestCatalogueCoversAccents(t *testing.T) {
 	accents := map[string]bool{}
 	for _, v := range Catalogue {
 		accents[v.Accent] = true
 	}
-	if len(accents) < 10 {
-		t.Errorf("catalogue covers %d accents, want at least 10", len(accents))
+	if len(accents) < 6 {
+		t.Errorf("catalogue covers %d accents, want at least 6", len(accents))
 	}
 	for key, names := range accentFamilies {
 		if len(names) == 0 {

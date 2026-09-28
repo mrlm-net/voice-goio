@@ -12,6 +12,7 @@ import (
 
 	voicegoio "github.com/mrlm-net/voice-goio"
 	"github.com/mrlm-net/voice-goio/internal/dsp"
+	"github.com/mrlm-net/voice-goio/internal/wav"
 )
 
 // DefaultSampleRate is the rate the device is opened at. 48 kHz is what every
@@ -48,6 +49,18 @@ type Options struct {
 	// of playing it, on any platform. Empty uses the platform's audio output,
 	// unless VOICEGOIO_OUT_DIR is set.
 	WAVDir string
+	// RecordPath records everything that goes to the device into one
+	// continuous WAV file, as well as playing it. This is a session recording:
+	// the whole frequency as it was heard, in one file that can be sent to
+	// somebody.
+	RecordPath string
+	// RecordGapMS is the silence inserted between transmissions in the
+	// recording, so they do not run into each other. 0 means 500.
+	RecordGapMS int
+	// Silent accepts audio and plays nothing. Recording still happens, so this
+	// is how a render produces a file without also shouting through the
+	// speakers for several minutes.
+	Silent bool
 }
 
 type item struct {
@@ -63,15 +76,18 @@ type item struct {
 // serialised: one transmission is audible at a time, which is also what a real
 // receiver does.
 type Player struct {
-	mu     sync.Mutex
-	sink   sink
-	rate   int
-	depth  int
-	queues map[string]chan item
-	events chan voicegoio.PlaybackEvent
-	wg     sync.WaitGroup
-	done   chan struct{}
-	closed bool
+	mu      sync.Mutex
+	sink    sink
+	rate    int
+	depth   int
+	queues  map[string]chan item
+	rec     *wav.Writer
+	recPath string
+	recGap  int // samples of silence between transmissions
+	events  chan voicegoio.PlaybackEvent
+	wg      sync.WaitGroup
+	done    chan struct{}
+	closed  bool
 }
 
 // NewPlayer opens the output device.
@@ -86,22 +102,49 @@ func NewPlayer(opts Options) (*Player, error) {
 	}
 	var s sink
 	var err error
-	if opts.WAVDir != "" {
+	switch {
+	case opts.Silent:
+		s = &silentSink{}
+	case opts.WAVDir != "":
 		s = &fileSink{dir: opts.WAVDir}
-	} else if s, err = newSink(); err != nil {
-		return nil, err
+	default:
+		if s, err = newSink(); err != nil {
+			return nil, err
+		}
 	}
 	if err := s.open(opts.DeviceID, rate); err != nil {
 		return nil, err
 	}
-	return &Player{
+	p := &Player{
 		sink:   s,
 		rate:   rate,
 		depth:  depth,
 		queues: make(map[string]chan item),
 		events: make(chan voicegoio.PlaybackEvent, 128),
 		done:   make(chan struct{}),
-	}, nil
+	}
+	if opts.RecordPath != "" {
+		w, err := wav.Create(opts.RecordPath, rate)
+		if err != nil {
+			s.close()
+			return nil, fmt.Errorf("audio: record to %s: %w", opts.RecordPath, err)
+		}
+		gap := opts.RecordGapMS
+		if gap == 0 {
+			gap = 500
+		}
+		p.rec, p.recPath, p.recGap = w, opts.RecordPath, gap*rate/1000
+	}
+	return p, nil
+}
+
+// Recording reports the path and duration of the session recording, if one is
+// being made.
+func (p *Player) Recording() (path string, seconds float64, ok bool) {
+	if p.rec == nil {
+		return "", 0, false
+	}
+	return p.recPath, p.rec.Duration(), true
 }
 
 // SampleRate reports the rate the device is open at.
@@ -176,9 +219,15 @@ func (p *Player) serve(q chan item) {
 				pcm = dsp.ToInt16(dsp.Resample(dsp.FromInt16(pcm), it.rate, p.rate))
 			}
 			p.mu.Lock()
-			s, closed := p.sink, p.closed
+			s, closed, rec := p.sink, p.closed, p.rec
 			p.mu.Unlock()
 			if !closed {
+				// Record before playing, so the recording holds exactly what
+				// the device was given, in the order it was given it.
+				if rec != nil {
+					_ = rec.Append(pcm)
+					_ = rec.AppendSilence(p.recGap)
+				}
 				// The device write is serialised by the sink itself; only one
 				// frequency is audible at a time.
 				_ = s.write(pcm)
@@ -218,6 +267,12 @@ func (p *Player) Close() error {
 
 	p.wg.Wait()
 	close(p.events)
+	if p.rec != nil {
+		if err := p.rec.Close(); err != nil {
+			s.close()
+			return err
+		}
+	}
 	return s.close()
 }
 

@@ -21,11 +21,12 @@ pilot speech ─▶ STT ─▶ Recognition{intent, callsign, value} ─▶ app
 
 ```bash
 make demo-arrival   # the full sequence: radar → approach → tower → ground
+make demo-emergency # a mayday with a second aircraft on the same runway
 make demo           # one arrival, with the weather going off and a new ATIS
 make demo-accents   # one clearance in many assigned voices
 make demo-profiles  # one clearance through each radio profile
 make demo-live      # type pilot calls, hear the controller answer
-go run ./cmd/demo -mode emergency   # a mayday and a pan pan, heard and answered
+make demo-wav       # render every demo to one WAV each, silently
 ```
 
 `demo-arrival` is the one to run first. It is the whole library in one pass:
@@ -106,7 +107,7 @@ in the Windows backend has to cope with them.
 | `normalise/` | `BAW123 climb FL350` → `Speedbird one two tree, climb flight level tree fife zero`. ICAO and FAA, plus emergency signals, METAR shorthand and the pauses. |
 | `data/`, `grammar/` | Embedded telephony table and the SRGS grammar (leaf packages, because `go:embed` cannot reach out of its own directory). |
 | `tts/piper/` | The shipping synthesiser: a pool of warm piper sidecars, JSON lines in, raw PCM out. |
-| `tts/say/` | macOS development synthesiser. Real accents, no downloads. Not a shipping backend. |
+| `tts/say/` | macOS development synthesiser. English voices only, no downloads. Not a shipping backend. |
 | `tts/fake/` | Deterministic tone generator for CI and regression. |
 | `stt/sapi/` | Windows SAPI 5 in-process recognizer over raw COM vtables. |
 | `stt/fake/` | The tag parser plus stdin and script recognisers, for development and regression. |
@@ -231,6 +232,12 @@ go run ./cmd/voicecheck voices                             # pool report vs. the
 go run ./cmd/voicecheck download -model en_GB-vctk-medium  # fetch one
 go run ./cmd/voicecheck download -model all -write voices/voices.json
 ```
+
+Only piper renders non-native accents. The macOS development backend is
+English voices only: macOS ships Czech and German *language* voices, and
+handing them English text makes them mispronounce it rather than accent it,
+which is exactly what SPEC.md §4.3 forbids. Native accents there (en-GB,
+en-US, en-IE, en-AU, en-IN, en-ZA) are genuine English voices and are real.
 
 Non-English models (German, Czech, Dutch, Polish, French, Italian, Spanish)
 produce non-native controllers via the **swap trick**: a copy of the model

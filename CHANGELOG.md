@@ -5,6 +5,52 @@ All notable changes to voice-goio. The format follows
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
+## [Unreleased]
+
+### Added
+
+- `voicegoio.TagReason` and the `ReasonNoCallsign` / `ReasonOffGrammar` /
+  `ReasonLowConfidence` constants. When a transmission is not understood, the
+  recogniser now says *how* it failed, and keeps the callsign when it has one.
+  A `say_again` whose callsign was identified is now reported with 0.5
+  confidence rather than 0, because it was partially recognised. Both backends
+  set it.
+- `audio.Options.RecordPath` records the whole frequency to one continuous WAV
+  as it plays, and `audio.Options.Silent` accepts audio and plays nothing, so a
+  render produces a file without shouting through the speakers for several
+  minutes. `make demo-wav` renders every demo this way.
+- Recognised `ident` / `squawk ident`, `request_deviation`
+  ("request turn 20 degrees right due to weather"), and `report_souls`
+  ("souls on board one four seven").
+- `-mode emergency` is now two aircraft on one frequency and one runway: a
+  mayday from one, a go-around for the other whose landing clearance is taken
+  back, then souls on board and the landing. Three voices share the frequency.
+
+### Changed
+
+- A go-around is reported ahead of any readback inside it. "Going around,
+  climb tree thousand" is a go-around, not an altitude readback: the aircraft
+  is no longer doing what the controller last told it to.
+- A transmission carrying a pressure alongside its primary instruction reports
+  it as a secondary `qnh` tag instead of letting it compete to become the
+  intent.
+
+### Fixed
+
+- **The macOS development backend spoke non-English languages.** Accent labels
+  such as `en-CZ` and `en-DE` were mapped to Czech and German *language*
+  voices, which phonemise English as Czech and German — mispronunciation, not
+  an accent, and exactly what SPEC.md 4.3 forbids. Every voice that backend can
+  select is now an English one, and a test enforces it. Native accents
+  (en-GB, en-US, en-IE, en-AU, en-IN, en-ZA) are genuine and unaffected; the
+  non-native ones are only real with piper.
+- "I say again" was spoken "india say again": a lone capital I was treated as
+  an identifier rather than as the pronoun.
+- "descent to FL100" was not recognised as a descent readback, so a
+  transmission carrying a QNH as well was filed as a QNH readback.
+- A check-in that gave its level before the phrase identifying it
+  ("BAW123 15000 with you") lost the level.
+
 ## [0.1.2] — 2026-09-28
 
 No API change. Found by driving the live harness by hand.

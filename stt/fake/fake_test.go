@@ -46,7 +46,7 @@ func TestParserAgainstCorpus(t *testing.T) {
 		total++
 		got := p.Parse(l.Text)
 		bad := false
-		for _, key := range []string{voicegoio.TagIntent, voicegoio.TagCallsign, voicegoio.TagValue} {
+		for _, key := range []string{voicegoio.TagIntent, voicegoio.TagCallsign, voicegoio.TagValue, voicegoio.TagReason} {
 			want := l.Tags[key]
 			if got.Tags[key] != want {
 				t.Errorf("%q\n  %s = %q, want %q", l.Text, key, got.Tags[key], want)

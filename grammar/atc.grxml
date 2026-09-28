@@ -183,6 +183,14 @@
         <tag>out.intent="request_direct"; out.value=rules.fix;</tag></item>
       <item><one-of><item>the ils</item><item>ils approach</item><item>visual approach</item><item>rnav approach</item></one-of><item repeat="0-1"><ruleref uri="#runway"/></item>
         <tag>out.intent="request_approach"; out.value=rules.runway;</tag></item>
+      <item>
+        <one-of><item>turn</item><item>heading</item><item>deviation</item><item>to deviate</item></one-of>
+        <ruleref uri="#digits3"/>
+        <item repeat="0-1">degrees</item>
+        <one-of><item>left<tag>out.value=rules.digits3+"L";</tag></item><item>right<tag>out.value=rules.digits3+"R";</tag></item></one-of>
+        <item repeat="0-1"><one-of><item>due weather</item><item>due to weather</item><item>for weather</item></one-of></item>
+        <tag>out.intent="request_deviation";</tag>
+      </item>
       <item>pushback<tag>out.intent="request_pushback"; out.value="";</tag></item>
       <item>taxi<tag>out.intent="request_taxi"; out.value="";</tag></item>
       <item><one-of><item>takeoff</item><item>departure</item></one-of><tag>out.intent="request_takeoff"; out.value="";</tag></item>
@@ -198,6 +206,7 @@
       <item><one-of><item>runway vacated</item><item>vacated</item><item>clear of the runway</item></one-of><tag>out="report_vacated";</tag></item>
       <item><one-of><item>going around</item><item>go around</item></one-of><tag>out="report_going_around";</tag></item>
       <item><one-of><item>field in sight</item><item>traffic in sight</item><item>runway in sight</item></one-of><tag>out="report_in_sight";</tag></item>
+      <item><one-of><item>souls on board</item><item>persons on board</item></one-of><ruleref uri="#digits3"/><tag>out="report_souls";</tag></item>
     </one-of>
   </rule>
 

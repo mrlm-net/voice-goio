@@ -329,7 +329,10 @@ func (r *Recognizer) Stop() error {
 		}
 		if !r.got {
 			r.publish(voicegoio.Recognition{
-				Tags: map[string]string{voicegoio.TagIntent: voicegoio.IntentSayAgain},
+				Tags: map[string]string{
+					voicegoio.TagIntent: voicegoio.IntentSayAgain,
+					voicegoio.TagReason: voicegoio.ReasonNoCallsign,
+				},
 			})
 		}
 		// Release the microphone between transmissions.
@@ -363,8 +366,14 @@ func (r *Recognizer) pump(timeoutMS uintptr) {
 			if ev.lParam != nil {
 				comObject(ev.lParam).release()
 			}
+			// SPEI_FALSE_RECOGNITION: the engine heard speech but could not
+			// match it to the grammar, and gives us nothing to identify the
+			// aircraft with.
 			r.publish(voicegoio.Recognition{
-				Tags: map[string]string{voicegoio.TagIntent: voicegoio.IntentSayAgain},
+				Tags: map[string]string{
+					voicegoio.TagIntent: voicegoio.IntentSayAgain,
+					voicegoio.TagReason: voicegoio.ReasonNoCallsign,
+				},
 			})
 			r.got = true
 		default:
@@ -400,10 +409,28 @@ func (r *Recognizer) recognition(res comObject) voicegoio.Recognition {
 	if out.Confidence < r.opt.MinConfidence || len(out.Tags) == 0 {
 		// A low confidence result is worse than none: acting on a misheard
 		// clearance is the failure mode this threshold exists to prevent.
-		out.Tags = map[string]string{voicegoio.TagIntent: voicegoio.IntentSayAgain}
+		//
+		// The callsign is kept when the grammar produced one, so the
+		// application can answer the aircraft by name instead of falling back
+		// to "station calling".
+		callsign := out.Tags[voicegoio.TagCallsign]
+		out.Tags = map[string]string{
+			voicegoio.TagIntent: voicegoio.IntentSayAgain,
+			voicegoio.TagReason: voicegoio.ReasonLowConfidence,
+		}
+		if callsign != "" {
+			out.Tags[voicegoio.TagCallsign] = callsign
+		} else {
+			out.Tags[voicegoio.TagReason] = voicegoio.ReasonNoCallsign
+		}
+		return out
 	}
 	if _, ok := out.Tags[voicegoio.TagIntent]; !ok {
 		out.Tags[voicegoio.TagIntent] = voicegoio.IntentSayAgain
+		out.Tags[voicegoio.TagReason] = voicegoio.ReasonOffGrammar
+		if out.Tags[voicegoio.TagCallsign] == "" {
+			out.Tags[voicegoio.TagReason] = voicegoio.ReasonNoCallsign
+		}
 	}
 	return out
 }

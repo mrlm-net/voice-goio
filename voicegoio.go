@@ -92,7 +92,33 @@ const (
 	TagValue    = "value"
 	TagUnit     = "unit"
 
+	// TagReason is set alongside IntentSayAgain when the recogniser failed to
+	// understand a transmission, and says which way it failed. It is absent
+	// when the pilot themselves said "say again", which is a recognised
+	// instruction rather than a failure.
+	//
+	// The distinction matters because the controller's reply differs. A
+	// transmission whose callsign was identified deserves to be answered by
+	// name — "Speedbird one two three, say again" — and answering it with
+	// "station calling, say again your callsign" when the callsign is sitting
+	// in the tags reads as a machine that is not listening.
+	TagReason = "reason"
+
 	IntentSayAgain = "say_again"
+)
+
+// Reasons reported in TagReason.
+const (
+	// ReasonNoCallsign: no aircraft on frequency was identified. Ask who is
+	// calling.
+	ReasonNoCallsign = "no_callsign"
+	// ReasonOffGrammar: the aircraft was identified but what it said is not
+	// phraseology the grammar covers. TagCallsign is set. Ask that aircraft to
+	// say again.
+	ReasonOffGrammar = "off_grammar"
+	// ReasonLowConfidence: the engine matched the grammar but below the
+	// configured threshold, so the result was discarded rather than acted on.
+	ReasonLowConfidence = "low_confidence"
 )
 
 // VoiceProfile identifies one controller voice: a piper model, a speaker inside
