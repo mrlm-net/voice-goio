@@ -1,0 +1,23 @@
+# FAA phraseology golden file: "input | expected spoken form".
+
+# --- SPEC.md 4.1, one row per line ---
+127.45 | one two seven point four five
+3 5 9 0 | three five niner zero
+FL350 | flight level three five zero
+5000 ft | five thousand
+HDG 270 | heading two seven zero
+RWY 27L | runway two seven left
+QNH 1013 | altimeter two niner niner two
+SQK 4321 | squawk four three two one
+TWY A3 | taxiway alpha three
+BAW123 | Speedbird one two three
+OK-ABC | oscar kilo alpha bravo charlie
+
+# --- pressure conversion ---
+QNH 1000 | altimeter two niner five three
+QNH 1023 | altimeter three zero two one
+ALTIMETER 2992 | altimeter two niner niner two
+
+# --- whole transmissions ---
+AAL55 climb and maintain 5000 ft | American five five, climb and maintain five thousand
+UAL329 turn left HDG 310, contact departure on 124.35 | United three two niner, turn left heading three one zero, contact departure on one two four point three five

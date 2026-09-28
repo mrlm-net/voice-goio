@@ -1,0 +1,501 @@
+{
+  "models": [
+    {
+      "name": "en_GB-vctk-medium",
+      "onnx": "en/en_GB/vctk/medium/en_GB-vctk-medium.onnx",
+      "config": "en/en_GB/vctk/medium/en_GB-vctk-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB",
+      "speaker_count": 109,
+      "espeak_override": "",
+      "speakers": [],
+      "accents": [
+        "en-GB",
+        "en-GB-scottish",
+        "en-IE",
+        "en-GB-north",
+        "en-AU",
+        "en-IN",
+        "en-NZ",
+        "en-ZA",
+        "en-CA",
+        "en-GB-south",
+        "en-US"
+      ]
+    },
+    {
+      "name": "en_US-libritts_r-medium",
+      "onnx": "en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx",
+      "config": "en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-US",
+      "speaker_count": 904,
+      "espeak_override": "",
+      "speakers": [],
+      "accents": [
+        "en-US",
+        "en-CA"
+      ]
+    },
+    {
+      "name": "en_US-l2arctic-medium",
+      "onnx": "en/en_US/l2arctic/medium/en_US-l2arctic-medium.onnx",
+      "config": "en/en_US/l2arctic/medium/en_US-l2arctic-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-L2",
+      "speaker_count": 24,
+      "espeak_override": "",
+      "speakers": [],
+      "accents": [
+        "en-IN",
+        "en-L2",
+        "en-ES",
+        "en-CN",
+        "en-AR",
+        "en-KO",
+        "en-VI"
+      ]
+    },
+    {
+      "name": "en_US-arctic-medium",
+      "onnx": "en/en_US/arctic/medium/en_US-arctic-medium.onnx",
+      "config": "en/en_US/arctic/medium/en_US-arctic-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-US",
+      "speaker_count": 18,
+      "espeak_override": "",
+      "speakers": [],
+      "accents": [
+        "en-US",
+        "en-CA",
+        "en-GB-scottish",
+        "en-IN"
+      ]
+    },
+    {
+      "name": "en_GB-aru-medium",
+      "onnx": "en/en_GB/aru/medium/en_GB-aru-medium.onnx",
+      "config": "en/en_GB/aru/medium/en_GB-aru-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB",
+      "speaker_count": 12,
+      "espeak_override": "",
+      "speakers": [],
+      "accents": [
+        "en-GB",
+        "en-GB-north"
+      ]
+    },
+    {
+      "name": "en_GB-semaine-medium",
+      "onnx": "en/en_GB/semaine/medium/en_GB-semaine-medium.onnx",
+      "config": "en/en_GB/semaine/medium/en_GB-semaine-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB",
+      "speaker_count": 4,
+      "espeak_override": "",
+      "speakers": [],
+      "accents": [
+        "en-GB",
+        "en-IE"
+      ]
+    },
+    {
+      "name": "en_US-ryan-medium",
+      "onnx": "en/en_US/ryan/medium/en_US-ryan-medium.onnx",
+      "config": "en/en_US/ryan/medium/en_US-ryan-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-US",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "ryan",
+          "accent": "en-US",
+          "quality": 5,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_US-joe-medium",
+      "onnx": "en/en_US/joe/medium/en_US-joe-medium.onnx",
+      "config": "en/en_US/joe/medium/en_US-joe-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-US",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "joe",
+          "accent": "en-US",
+          "quality": 4,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_US-lessac-medium",
+      "onnx": "en/en_US/lessac/medium/en_US-lessac-medium.onnx",
+      "config": "en/en_US/lessac/medium/en_US-lessac-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "BSD-3-Clause",
+      "accent": "en-US",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "lessac",
+          "accent": "en-US",
+          "quality": 5,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_US-hfc_male-medium",
+      "onnx": "en/en_US/hfc_male/medium/en_US-hfc_male-medium.onnx",
+      "config": "en/en_US/hfc_male/medium/en_US-hfc_male-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC0-1.0",
+      "accent": "en-US",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "hfc_male",
+          "accent": "en-US",
+          "quality": 4,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_US-hfc_female-medium",
+      "onnx": "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx",
+      "config": "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC0-1.0",
+      "accent": "en-US",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "hfc_female",
+          "accent": "en-US",
+          "quality": 4,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_GB-alan-medium",
+      "onnx": "en/en_GB/alan/medium/en_GB-alan-medium.onnx",
+      "config": "en/en_GB/alan/medium/en_GB-alan-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "alan",
+          "accent": "en-GB",
+          "quality": 5,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_GB-alba-medium",
+      "onnx": "en/en_GB/alba/medium/en_GB-alba-medium.onnx",
+      "config": "en/en_GB/alba/medium/en_GB-alba-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB-scottish",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "alba",
+          "accent": "en-GB-scottish",
+          "quality": 4,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_GB-northern_english_male-medium",
+      "onnx": "en/en_GB/northern_english_male/medium/en_GB-northern_english_male-medium.onnx",
+      "config": "en/en_GB/northern_english_male/medium/en_GB-northern_english_male-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB-north",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "northern_english_male",
+          "accent": "en-GB-north",
+          "quality": 4,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "en_GB-southern_english_female-low",
+      "onnx": "en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx",
+      "config": "en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx.json",
+      "sha256": "",
+      "sample_rate": 16000,
+      "license": "CC-BY-4.0",
+      "accent": "en-GB-south",
+      "speaker_count": 1,
+      "espeak_override": "",
+      "speakers": [
+        {
+          "id": 0,
+          "label": "southern_english_female",
+          "accent": "en-GB-south",
+          "quality": 3,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "name": "de_DE-thorsten-medium",
+      "onnx": "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+      "config": "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC0-1.0",
+      "accent": "en-DE",
+      "speaker_count": 1,
+      "espeak_override": "en-us",
+      "speakers": []
+    },
+    {
+      "name": "de_DE-mls-medium",
+      "onnx": "de/de_DE/mls/medium/de_DE-mls-medium.onnx",
+      "config": "de/de_DE/mls/medium/de_DE-mls-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-DE",
+      "speaker_count": 20,
+      "espeak_override": "en-us",
+      "speakers": [],
+      "accents": [
+        "en-DE"
+      ]
+    },
+    {
+      "name": "nl_NL-mls-medium",
+      "onnx": "nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx",
+      "config": "nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-NL",
+      "speaker_count": 20,
+      "espeak_override": "en-us",
+      "speakers": [],
+      "accents": [
+        "en-NL"
+      ]
+    },
+    {
+      "name": "pl_PL-mls-medium",
+      "onnx": "pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx",
+      "config": "pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx.json",
+      "sha256": "",
+      "sample_rate": 16000,
+      "license": "CC-BY-4.0",
+      "accent": "en-PL",
+      "speaker_count": 1,
+      "espeak_override": "en-us",
+      "speakers": []
+    },
+    {
+      "name": "fr_FR-mls-medium",
+      "onnx": "fr/fr_FR/mls/medium/fr_FR-mls-medium.onnx",
+      "config": "fr/fr_FR/mls/medium/fr_FR-mls-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-FR",
+      "speaker_count": 20,
+      "espeak_override": "en-us",
+      "speakers": [],
+      "accents": [
+        "en-FR"
+      ]
+    },
+    {
+      "name": "cs_CZ-jirka-medium",
+      "onnx": "cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx",
+      "config": "cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx.json",
+      "sha256": "",
+      "sample_rate": 22050,
+      "license": "CC-BY-4.0",
+      "accent": "en-CZ",
+      "speaker_count": 1,
+      "espeak_override": "en-us",
+      "speakers": []
+    },
+    {
+      "name": "it_IT-riccardo-x_low",
+      "onnx": "it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx",
+      "config": "it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx.json",
+      "sha256": "",
+      "sample_rate": 16000,
+      "license": "CC-BY-4.0",
+      "accent": "en-IT",
+      "speaker_count": 1,
+      "espeak_override": "en-us",
+      "speakers": []
+    },
+    {
+      "name": "es_ES-mls-medium",
+      "onnx": "es/es_ES/mls_9972/low/es_ES-mls_9972-low.onnx",
+      "config": "es/es_ES/mls_9972/low/es_ES-mls_9972-low.onnx.json",
+      "sha256": "",
+      "sample_rate": 16000,
+      "license": "CC-BY-4.0",
+      "accent": "en-ES",
+      "speaker_count": 1,
+      "espeak_override": "en-us",
+      "speakers": []
+    }
+  ],
+  "regions": {
+    "K": [
+      "en-US"
+    ],
+    "C": [
+      "en-CA",
+      "en-US"
+    ],
+    "EG": [
+      "en-GB",
+      "en-GB-north",
+      "en-GB-south",
+      "en-GB-scottish",
+      "en-IE"
+    ],
+    "EI": [
+      "en-IE",
+      "en-GB"
+    ],
+    "ED": [
+      "en-DE",
+      "en-GB",
+      "en-US"
+    ],
+    "ET": [
+      "en-DE",
+      "en-US"
+    ],
+    "LK": [
+      "en-CZ",
+      "en-GB",
+      "en-DE"
+    ],
+    "LZ": [
+      "en-CZ",
+      "en-DE",
+      "en-GB"
+    ],
+    "EP": [
+      "en-PL",
+      "en-DE",
+      "en-GB"
+    ],
+    "EH": [
+      "en-NL",
+      "en-GB",
+      "en-DE"
+    ],
+    "EB": [
+      "en-NL",
+      "en-FR",
+      "en-GB"
+    ],
+    "LF": [
+      "en-FR",
+      "en-GB"
+    ],
+    "LI": [
+      "en-IT",
+      "en-GB"
+    ],
+    "LE": [
+      "en-ES",
+      "en-GB"
+    ],
+    "LP": [
+      "en-ES",
+      "en-GB"
+    ],
+    "Y": [
+      "en-AU",
+      "en-NZ",
+      "en-GB"
+    ],
+    "NZ": [
+      "en-NZ",
+      "en-AU",
+      "en-GB"
+    ],
+    "VI": [
+      "en-IN",
+      "en-GB"
+    ],
+    "VO": [
+      "en-IN",
+      "en-GB"
+    ],
+    "FA": [
+      "en-ZA",
+      "en-GB"
+    ],
+    "OM": [
+      "en-L2",
+      "en-GB"
+    ],
+    "LT": [
+      "en-L2",
+      "en-GB"
+    ]
+  }
+}

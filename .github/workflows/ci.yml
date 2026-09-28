@@ -1,0 +1,108 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  # No cgo anywhere: the Windows backends reach the platform through syscall,
+  # and a cgo build would need a toolchain we do not want to depend on.
+  CGO_ENABLED: "0"
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      - name: gofmt
+        shell: bash
+        run: |
+          unformatted="$(gofmt -l . | grep -v '^\.claude/' || true)"
+          if [ -n "$unformatted" ]; then
+            echo "these files are not gofmt'd:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: vet
+        run: go vet ./...
+
+      # Neither piper nor any voice model is fetched here. The sidecar protocol
+      # is covered by testdata/fakepiper, which the piper tests build.
+      - name: test
+        run: go test -count=1 ./...
+
+      - name: race
+        if: matrix.os != 'windows-latest'
+        run: go test -race -count=1 ./...
+
+  crossbuild:
+    name: cross build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      # Windows is the runtime target but development happens on macOS, so the
+      # Windows-only files are compiled on every commit to stop them rotting.
+      - name: build windows/amd64
+        run: GOOS=windows GOARCH=amd64 go build ./...
+      - name: build darwin/arm64
+        run: GOOS=darwin GOARCH=arm64 go build ./...
+      - name: build linux/amd64
+        run: GOOS=linux GOARCH=amd64 go build ./...
+      - name: build with the commercial licence filter
+        run: GOOS=windows GOARCH=amd64 go build -tags commercial ./...
+
+  dependencies:
+    name: no dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      - name: go.mod has no requires
+        run: |
+          if grep -qE '^\s*require' go.mod; then
+            echo "go.mod must have zero require directives:"; grep -nE '^\s*require' go.mod; exit 1
+          fi
+
+      - name: every dependency is stdlib
+        run: |
+          go list -deps ./... \
+            | grep -v '^github.com/mrlm-net/voice-goio' \
+            | awk -F/ '$1 ~ /\./ { print "non-stdlib dependency: " $0; bad=1 } END { exit bad }'
+
+  quality:
+    name: quality bars
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          check-latest: true
+
+      # SPEC.md 9: at least 100 assignable voices across at least 10 accents,
+      # which is the BeyondATC "Basic" tier this has to match.
+      - name: voice pool
+        run: go run ./cmd/voicecheck voices
+
+      # SPEC.md 9: at least 95% correct intent and callsign on the corpus.
+      - name: recognition corpus
+        run: go run ./cmd/voicecheck recog -backend fake -min 95

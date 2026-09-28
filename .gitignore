@@ -30,3 +30,9 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+.claude
+
+# Listening output from cmd/voicecheck and the demo
+wav/
+wav-audit/

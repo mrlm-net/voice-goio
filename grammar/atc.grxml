@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SRGS grammar for pilot transmissions, loaded by stt/sapi through
+  ISpRecoGrammar::LoadCmdFromMemory and mirrored by the pure Go tag parser in
+  stt/fake.
+
+  The "callsign" rule is intentionally empty. It is a dynamic rule: stt/sapi
+  clears it and adds one word transition per aircraft actually on frequency
+  whenever the application calls SetCallsigns. Restricting recognition to the
+  five or ten aircraft on the frequency is the single largest accuracy lever we
+  have, far more than any acoustic tuning.
+
+  Every number rule accepts both phraseologies (three|tree, five|fife,
+  nine|niner, point|decimal) so a pilot may read back either.
+-->
+<grammar version="1.0" xml:lang="en-US" mode="voice" root="transmission"
+         tag-format="semantics/1.0"
+         xmlns="http://www.w3.org/2001/06/grammar">
+
+  <rule id="transmission" scope="public">
+    <item repeat="0-1"><ruleref uri="#courtesy"/></item>
+    <one-of>
+      <!-- Distress and urgency come first, and the callsign may follow the
+           signal rather than precede it, which is how the calls are actually
+           made. An aircraft in distress may not even be on this frequency's
+           roster yet, so the callsign is optional here alone. -->
+      <item>
+        <ruleref uri="#emergency"/><tag>out.intent=rules.emergency.intent; out.value=rules.emergency.value;</tag>
+        <item repeat="0-1"><ruleref uri="#callsign"/><tag>out.callsign=rules.callsign;</tag></item>
+        <item repeat="0-1"><ruleref uri="#nature"/><tag>out.value=rules.nature;</tag></item>
+      </item>
+      <item>
+        <ruleref uri="#callsign"/><tag>out.callsign=rules.callsign;</tag>
+        <ruleref uri="#body"/><tag>out.intent=rules.body.intent; out.value=rules.body.value;</tag>
+      </item>
+      <item>
+        <ruleref uri="#body"/><tag>out.intent=rules.body.intent; out.value=rules.body.value;</tag>
+        <ruleref uri="#callsign"/><tag>out.callsign=rules.callsign;</tag>
+      </item>
+      <item>
+        <ruleref uri="#short"/><tag>out.intent=rules.short;</tag>
+        <item repeat="0-1"><ruleref uri="#callsign"/><tag>out.callsign=rules.callsign;</tag></item>
+      </item>
+    </one-of>
+  </rule>
+
+  <!-- Rebuilt at runtime. Present so the static grammar compiles standalone. -->
+  <rule id="callsign" scope="public">
+    <one-of>
+      <item>unknown traffic<tag>out="UNKNOWN";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="emergency" scope="private">
+    <one-of>
+      <item>mayday mayday mayday<tag>out.intent="mayday"; out.value="";</tag></item>
+      <item>mayday<tag>out.intent="mayday"; out.value="";</tag></item>
+      <item>pan pan pan pan pan pan<tag>out.intent="pan_pan"; out.value="";</tag></item>
+      <item>pan pan<tag>out.intent="pan_pan"; out.value="";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="nature" scope="private">
+    <one-of>
+      <item>engine failure<tag>out="engine_failure";</tag></item>
+      <item>engine out<tag>out="engine_failure";</tag></item>
+      <item>engine fire<tag>out="engine_fire";</tag></item>
+      <item>fire on board<tag>out="fire";</tag></item>
+      <item>smoke in the cockpit<tag>out="smoke";</tag></item>
+      <item>smoke<tag>out="smoke";</tag></item>
+      <item>low fuel<tag>out="low_fuel";</tag></item>
+      <item>minimum fuel<tag>out="low_fuel";</tag></item>
+      <item>fuel emergency<tag>out="low_fuel";</tag></item>
+      <item>medical emergency<tag>out="medical";</tag></item>
+      <item>hydraulic failure<tag>out="hydraulic";</tag></item>
+      <item>electrical failure<tag>out="electrical";</tag></item>
+      <item>depressurisation<tag>out="depressurisation";</tag></item>
+      <item>bird strike<tag>out="bird_strike";</tag></item>
+      <item>gear problem<tag>out="gear";</tag></item>
+      <item>unlawful interference<tag>out="hijack";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="body" scope="private">
+    <one-of>
+      <item><ruleref uri="#readback"/><tag>out.intent=rules.readback.intent; out.value=rules.readback.value;</tag></item>
+      <item><ruleref uri="#request"/><tag>out.intent=rules.request.intent; out.value=rules.request.value;</tag></item>
+      <item><ruleref uri="#report"/><tag>out.intent=rules.report; out.value="";</tag></item>
+      <item><ruleref uri="#checkin"/><tag>out.intent="checkin"; out.value=rules.checkin;</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="courtesy" scope="private">
+    <one-of>
+      <item>good day</item><item>good morning</item><item>good afternoon</item>
+      <item>good evening</item><item>hello</item>
+    </one-of>
+  </rule>
+
+  <rule id="short" scope="private">
+    <one-of>
+      <item>say again<tag>out="say_again";</tag></item>
+      <item>standby<tag>out="standby";</tag></item>
+      <item>roger<tag>out="roger";</tag></item>
+      <item>wilco<tag>out="wilco";</tag></item>
+      <item>affirm<tag>out="affirm";</tag></item>
+      <item>negative<tag>out="negative";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="checkin" scope="private">
+    <one-of>
+      <item>with you<tag>out="";</tag></item>
+      <item>
+        <one-of><item>passing</item><item>climbing through</item><item>descending through</item></one-of>
+        <ruleref uri="#level"/><tag>out=rules.level;</tag>
+      </item>
+      <item>
+        <one-of><item>maintaining</item><item>level</item><item>level at</item></one-of>
+        <ruleref uri="#level"/><tag>out=rules.level;</tag>
+      </item>
+    </one-of>
+  </rule>
+
+  <rule id="readback" scope="private">
+    <one-of>
+      <item>
+        <one-of><item>climb</item><item>climbing</item><item>descend</item><item>descending</item><item>maintain</item><item>maintaining</item></one-of>
+        <item repeat="0-1">to</item>
+        <ruleref uri="#level"/>
+        <tag>out.intent="readback_altitude"; out.value=rules.level;</tag>
+      </item>
+      <item>
+        <one-of><item>heading</item><item>turn left heading</item><item>turn right heading</item><item>fly heading</item></one-of>
+        <ruleref uri="#digits3"/>
+        <tag>out.intent="readback_heading"; out.value=rules.digits3;</tag>
+      </item>
+      <item>
+        <one-of><item>speed</item><item>maintain speed</item><item>reduce speed</item><item>increase speed</item></one-of>
+        <ruleref uri="#digits3"/>
+        <item repeat="0-1">knots</item>
+        <tag>out.intent="readback_speed"; out.value=rules.digits3;</tag>
+      </item>
+      <item>
+        <one-of><item>contact</item><item>over to</item><item>going to</item><item>monitoring</item></one-of>
+        <item repeat="0-1"><ruleref uri="#station"/></item>
+        <ruleref uri="#frequency"/>
+        <tag>out.intent="readback_frequency"; out.value=rules.frequency;</tag>
+      </item>
+      <item>
+        <one-of><item>squawk</item><item>squawking</item></one-of>
+        <ruleref uri="#digits4"/>
+        <tag>out.intent="readback_squawk"; out.value=rules.digits4;</tag>
+      </item>
+      <item>
+        <one-of><item>runway</item><item>lining up runway</item><item>cleared to land runway</item><item>cleared for takeoff runway</item></one-of>
+        <ruleref uri="#runway"/>
+        <tag>out.intent="readback_runway"; out.value=rules.runway;</tag>
+      </item>
+      <item>
+        <one-of><item>taxi via</item><item>taxiing via</item><item>via</item></one-of>
+        <ruleref uri="#route"/>
+        <tag>out.intent="readback_taxi"; out.value=rules.route;</tag>
+      </item>
+      <item>
+        <one-of><item>qnh</item><item>altimeter</item></one-of>
+        <ruleref uri="#digits4"/>
+        <tag>out.intent="readback_qnh"; out.value=rules.digits4;</tag>
+      </item>
+    </one-of>
+  </rule>
+
+  <rule id="request" scope="private">
+    <item repeat="0-1"><one-of><item>request</item><item>requesting</item><item>we would like</item></one-of></item>
+    <one-of>
+      <item><one-of><item>climb</item><item>higher</item></one-of><item repeat="0-1">to</item><item repeat="0-1"><ruleref uri="#level"/></item>
+        <tag>out.intent="request_climb"; out.value=rules.level;</tag></item>
+      <item><one-of><item>descent</item><item>descend</item><item>lower</item></one-of><item repeat="0-1">to</item><item repeat="0-1"><ruleref uri="#level"/></item>
+        <tag>out.intent="request_descent"; out.value=rules.level;</tag></item>
+      <item>direct<item repeat="0-1">to</item><ruleref uri="#fix"/>
+        <tag>out.intent="request_direct"; out.value=rules.fix;</tag></item>
+      <item><one-of><item>the ils</item><item>ils approach</item><item>visual approach</item><item>rnav approach</item></one-of><item repeat="0-1"><ruleref uri="#runway"/></item>
+        <tag>out.intent="request_approach"; out.value=rules.runway;</tag></item>
+      <item>pushback<tag>out.intent="request_pushback"; out.value="";</tag></item>
+      <item>taxi<tag>out.intent="request_taxi"; out.value="";</tag></item>
+      <item><one-of><item>takeoff</item><item>departure</item></one-of><tag>out.intent="request_takeoff"; out.value="";</tag></item>
+      <item>landing<tag>out.intent="request_landing"; out.value="";</tag></item>
+      <item><one-of><item>ifr clearance</item><item>clearance</item><item>start up</item></one-of><tag>out.intent="request_clearance"; out.value="";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="report" scope="private">
+    <one-of>
+      <item><one-of><item>ready for departure</item><item>ready for takeoff</item><item>ready</item></one-of><tag>out="report_ready";</tag></item>
+      <item><one-of><item>established on the localizer</item><item>established</item><item>localizer established</item></one-of><tag>out="report_established";</tag></item>
+      <item><one-of><item>runway vacated</item><item>vacated</item><item>clear of the runway</item></one-of><tag>out="report_vacated";</tag></item>
+      <item><one-of><item>going around</item><item>go around</item></one-of><tag>out="report_going_around";</tag></item>
+      <item><one-of><item>field in sight</item><item>traffic in sight</item><item>runway in sight</item></one-of><tag>out="report_in_sight";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="station" scope="private">
+    <one-of>
+      <item>tower</item><item>ground</item><item>approach</item><item>departure</item>
+      <item>center</item><item>centre</item><item>radar</item><item>director</item><item>delivery</item>
+    </one-of>
+  </rule>
+
+  <rule id="digit" scope="private">
+    <one-of>
+      <item>zero<tag>out="0";</tag></item>
+      <item>one<tag>out="1";</tag></item>
+      <item>two<tag>out="2";</tag></item>
+      <item><one-of><item>three</item><item>tree</item></one-of><tag>out="3";</tag></item>
+      <item>four<tag>out="4";</tag></item>
+      <item><one-of><item>five</item><item>fife</item></one-of><tag>out="5";</tag></item>
+      <item>six<tag>out="6";</tag></item>
+      <item>seven<tag>out="7";</tag></item>
+      <item>eight<tag>out="8";</tag></item>
+      <item><one-of><item>nine</item><item>niner</item></one-of><tag>out="9";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="digits3" scope="private">
+    <ruleref uri="#digit"/><tag>out=rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+  </rule>
+
+  <rule id="digits4" scope="private">
+    <ruleref uri="#digit"/><tag>out=rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+  </rule>
+
+  <rule id="frequency" scope="private">
+    <ruleref uri="#digits3"/><tag>out=rules.digits3;</tag>
+    <one-of><item>decimal</item><item>point</item></one-of>
+    <ruleref uri="#digit"/><tag>out=out+"."+rules.digit;</tag>
+    <item repeat="0-1"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+    <item repeat="0-1"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+  </rule>
+
+  <rule id="level" scope="private">
+    <one-of>
+      <item>flight level<ruleref uri="#digits3"/><tag>out="FL"+rules.digits3;</tag></item>
+      <item><ruleref uri="#digit"/>thousand<tag>out=rules.digit+"000";</tag></item>
+      <item><ruleref uri="#digit"/><ruleref uri="#digit"/>thousand<tag>out="";</tag></item>
+      <item><ruleref uri="#digit"/>thousand<ruleref uri="#digit"/>hundred<tag>out="";</tag></item>
+      <item>altitude<ruleref uri="#digits3"/><tag>out=rules.digits3;</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="runway" scope="private">
+    <ruleref uri="#digit"/><tag>out=rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <item repeat="0-1">
+      <one-of>
+        <item>left<tag>out=out+"L";</tag></item>
+        <item>right<tag>out=out+"R";</tag></item>
+        <item>center<tag>out=out+"C";</tag></item>
+        <item>centre<tag>out=out+"C";</tag></item>
+      </one-of>
+    </item>
+  </rule>
+
+  <rule id="letter" scope="private">
+    <one-of>
+      <item>alpha<tag>out="A";</tag></item><item>bravo<tag>out="B";</tag></item>
+      <item>charlie<tag>out="C";</tag></item><item>delta<tag>out="D";</tag></item>
+      <item>echo<tag>out="E";</tag></item><item>foxtrot<tag>out="F";</tag></item>
+      <item>golf<tag>out="G";</tag></item><item>hotel<tag>out="H";</tag></item>
+      <item>india<tag>out="I";</tag></item><item>juliett<tag>out="J";</tag></item>
+      <item>kilo<tag>out="K";</tag></item><item>lima<tag>out="L";</tag></item>
+      <item>mike<tag>out="M";</tag></item><item>november<tag>out="N";</tag></item>
+      <item>oscar<tag>out="O";</tag></item><item>papa<tag>out="P";</tag></item>
+      <item>quebec<tag>out="Q";</tag></item><item>romeo<tag>out="R";</tag></item>
+      <item>sierra<tag>out="S";</tag></item><item>tango<tag>out="T";</tag></item>
+      <item>uniform<tag>out="U";</tag></item><item>victor<tag>out="V";</tag></item>
+      <item>whiskey<tag>out="W";</tag></item><item>xray<tag>out="X";</tag></item>
+      <item>yankee<tag>out="Y";</tag></item><item>zulu<tag>out="Z";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="route" scope="private">
+    <ruleref uri="#taxiway"/><tag>out=rules.taxiway;</tag>
+    <item repeat="0-4">
+      <item repeat="0-1">then</item>
+      <ruleref uri="#taxiway"/><tag>out=out+" "+rules.taxiway;</tag>
+    </item>
+  </rule>
+
+  <rule id="taxiway" scope="private">
+    <ruleref uri="#letter"/><tag>out=rules.letter;</tag>
+    <item repeat="0-1"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+  </rule>
+
+  <rule id="fix" scope="private">
+    <ruleref uri="#letter"/><tag>out=rules.letter;</tag>
+    <item repeat="4-4"><ruleref uri="#letter"/><tag>out=out+rules.letter;</tag></item>
+  </rule>
+</grammar>

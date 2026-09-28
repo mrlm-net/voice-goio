@@ -1,0 +1,74 @@
+# ICAO three letter designator,radio telephony designator
+# Source: ICAO Doc 8585. Extend freely; unknown codes fall back to the NATO
+# alphabet, so a missing row degrades rather than breaks.
+AAL,American
+ACA,Air Canada
+ADR,Adria
+AEA,Europa
+AFL,Aeroflot
+AFR,Airfrans
+AIC,Air India
+ANA,All Nippon
+ANZ,New Zealand
+ASA,Alaska
+AUA,Austrian
+AUI,Ukraine International
+AWE,Cactus
+AZA,Alitalia
+BAW,Speedbird
+BCS,Eurotrans
+BEL,Beeline
+BER,Air Berlin
+BTI,Air Baltic
+CCA,Air China
+CES,China Eastern
+CFG,Condor
+CKS,Connie
+CLX,Cargolux
+CPA,Cathay
+CSA,CSA
+CSN,China Southern
+CTN,Croatia
+DAL,Delta
+DLH,Lufthansa
+EIN,Shamrock
+ELY,El Al
+ETD,Etihad
+EWG,Eurowings
+EZS,Topswiss
+EZY,Easy
+FDX,Fedex
+FIN,Finnair
+GWI,Germanwings
+IBE,Iberia
+ICE,Ice Air
+JAL,Japan Air
+JBU,Jetblue
+KAL,Koreanair
+KLM,KLM
+LDM,Lauda
+LOT,Lot
+MSR,Egyptair
+NAX,Nor Shuttle
+NKS,Spirit Wings
+NSZ,Rednose
+PGT,Sunturk
+QFA,Qantas
+QTR,Qatari
+RYR,Ryanair
+SAS,Scandinavian
+SIA,Singapore
+SVA,Saudia
+SWA,Southwest
+SWR,Swiss
+TAP,Air Portugal
+THY,Turkish
+TRA,Transavia
+TVS,Skytravel
+UAE,Emirates
+UAL,United
+UPS,UPS
+VIR,Virgin
+VLG,Vueling
+VOI,Volaris
+WZZ,Wizz Air

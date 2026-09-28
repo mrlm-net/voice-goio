@@ -1,0 +1,71 @@
+# ICAO phraseology golden file: "input | expected spoken form".
+# Lines starting with # are comments; blank lines are ignored.
+#
+# NOTE on the frequency row: SPEC.md 4.1 shows 127.45 as "one two seven decimal
+# four five", which contradicts the digit table two rows above it (ICAO speaks 5
+# as "fife", as the FL350 and SQK rows in the same table do). The digit table is
+# the general rule, so it wins here and the frequency reads "four fife".
+
+# --- SPEC.md 4.1, one row per line ---
+127.45 | one two seven decimal four fife
+3 5 9 0 | tree fife niner zero
+FL350 | flight level tree fife zero
+5000 ft | fife thousand
+HDG 270 | heading two seven zero
+RWY 27L | runway two seven left
+QNH 1013 | Q N H one zero one tree
+SQK 4321 | squawk four tree two one
+TWY A3 | taxiway alpha tree
+BAW123 | Speedbird one two tree
+OK-ABC | oscar kilo alpha bravo charlie
+
+# --- keyword spelling variants ---
+FL 350 | flight level tree fife zero
+HEADING 90 | heading zero niner zero
+RUNWAY 6 | runway zero six
+SQUAWK 7000 | squawk seven zero zero zero
+TAXIWAY B | taxiway bravo
+118.005 | one one eight decimal zero zero fife
+
+# --- altitudes and speeds ---
+2500 ft | two thousand fife hundred
+12000 ft | one two thousand
+250 kt | two fife zero knots
+FL100 | flight level one zero zero
+
+# --- callsigns ---
+DLH4EK | Lufthansa four echo kilo
+CSA1234 | CSA one two tree four
+TVS765 | Skytravel seven six fife
+ZZZ123 | zulu zulu zulu one two tree
+D-EFGH | delta echo foxtrot golf hotel
+
+# --- case handling: proper nouns keep their case, shouted words do not ---
+BAW123 contact London Control on 127.45 | Speedbird one two tree, contact London Control on one two seven decimal four fife
+BAW123 CLIMB TO FL350 | Speedbird one two tree, climb to flight level tree fife zero
+DESCEND AND MAINTAIN 5000 ft | descend and maintain fife thousand
+
+# --- whole transmissions ---
+BAW123 descend FL100, QNH 1013 | Speedbird one two tree, descend flight level one zero zero, Q N H one zero one tree
+CSA1234 contact Praha Radar on 127.45 | CSA one two tree four, contact Praha Radar on one two seven decimal four fife
+OK-ABC taxi via TWY A3 and B, hold short RWY 24 | oscar kilo alpha bravo charlie, taxi via taxiway alpha tree, bravo, hold short runway two four
+BAW123 cleared ILS approach RWY 06, report established | Speedbird one two tree, cleared I L S approach runway zero six, report established
+
+# --- emergency: "PAN" must never be spelled, and repeats need pauses ---
+MAYDAY MAYDAY MAYDAY | mayday, mayday, mayday
+PAN PAN, PAN PAN, PAN PAN | pan pan, pan pan, pan pan
+BAW123 MAYDAY MAYDAY MAYDAY, engine failure, SQK 7700 | Speedbird one two tree, mayday, mayday, mayday, engine failure, squawk seven seven zero zero
+OK-ABC PAN PAN, PAN PAN, PAN PAN, low fuel | oscar kilo alpha bravo charlie, pan pan, pan pan, pan pan, low fuel
+
+# --- ATIS and weather ---
+BKN020 | broken two thousand
+FEW030 SCT015 OVC008 | few tree thousand, scattered one thousand fife hundred, overcast eight hundred
+10KM BR NOSIG | one zero kilometres mist no significant change
+RWY 27L in use, TS RA, QNH 1008 | runway two seven left in use, thunderstorm rain, Q N H one zero zero eight
+MAYDAY MAYDAY MAYDAY BAW123 engine failure | mayday, mayday, mayday, Speedbird one two tree, engine failure
+PAN PAN PAN PAN PAN PAN OK-ABC low fuel | pan pan, pan pan, pan pan, oscar kilo alpha bravo charlie, low fuel
+
+# --- a taxi clearance says where to, not only which way ---
+OK-ABC taxi to RWY 27L at A1 via TWY A3 and B | oscar kilo alpha bravo charlie, taxi to runway two seven left at alpha one, via taxiway alpha tree, bravo
+OK-ABC taxi to stand 42 via TWY B | oscar kilo alpha bravo charlie, taxi to stand four two, via taxiway bravo
+BAW123 RWY 27L at A1 cleared for takeoff | Speedbird one two tree, runway two seven left at alpha one, cleared for takeoff
