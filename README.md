@@ -10,7 +10,14 @@ any particular simulator. There is no SimConnect here, no MSFS, no assumption
 about where the transmissions come from. An application hands it text and gets
 audio; it hands the application tags.
 
-**v0.3.0** — the platform-independent half is complete and tested; the two
+> [!WARNING]
+> **Under active development, and this README is as much a working notebook as
+> it is documentation.** The API moves, versions come fast, and the two Windows
+> backends have never run against real hardware. Much of what follows is design
+> reasoning and open questions rather than a stable contract. Do not build on it
+> yet unless you are the one building it.
+
+**v0.3.1** — the platform-independent half is complete and tested; the two
 Windows backends are written and cross-compile but have not yet run against
 real hardware. See [Platform status](#platform-status) before wiring it in.
 
@@ -313,7 +320,7 @@ Remove it, or drop the `replace`, before a release build. When the library
 settles:
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.3.0
+go get github.com/mrlm-net/voice-goio@v0.3.1
 ```
 
 ### What to wire first
