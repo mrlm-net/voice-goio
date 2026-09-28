@@ -7,7 +7,7 @@ compatibility surface.
 
 ## [0.1.0] — 2026-09-28
 
-Requires Go 1.26 or newer.
+Requires Go 1.27 or newer.
 
 First tagged release. The platform-independent half of SPEC.md is complete and
 tested; the Windows backends are written and cross-compile on every commit but
