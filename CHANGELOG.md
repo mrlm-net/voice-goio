@@ -5,6 +5,32 @@ All notable changes to voice-goio. The format follows
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
+## [0.1.2] — 2026-09-28
+
+No API change. Found by driving the live harness by hand.
+
+### Added
+
+- `ident` and `squawk ident` are recognised as an instruction in their own
+  right, in the Go parser, in `grammar/atc.grxml` so the Windows backend
+  agrees, and in the demo's canned controller.
+- `stt/fake` accepts the identifier and plain digits as a typing convenience:
+  `CSA1234 with you, 15000` and `DLH4EK request climb FL370` tag exactly as
+  their spoken equivalents do. Speech never produces those forms, so no
+  grammar rule was widened and the Windows backend is unaffected.
+
+### Fixed
+
+- A single-token callsign could never be matched. `matchCallsign` only tried
+  windows of two or more tokens, because every spoken callsign is several
+  words, so `CSA1234` failed regardless of what the roster held. The window
+  now goes down to one token, and the roster registers the identifier itself
+  alongside every spoken variant.
+- The digit reader only understood number words, so a check-in written with
+  digits lost its level.
+
+The recognition corpus is now 41 phrases, all tagged exactly.
+
 ## [0.1.1] — 2026-09-28
 
 Toolchain and CI only; no change to the library itself. **Use this rather than
