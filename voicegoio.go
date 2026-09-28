@@ -1,5 +1,11 @@
-// Package voicegoio is an offline voice input/output library for an MSFS ATC
-// application.
+// Package voicegoio is an offline ATC voice input/output library.
+//
+// It provides controller speech out and pilot speech in for any application
+// that needs an air traffic control radio: a flight simulator add-on, a
+// training tool, a controller trainer. The library is aviation-specific — the
+// normaliser, the grammar, the radio chain and the voice pool are all built
+// around ATC phraseology — but it is simulator-agnostic. Nothing here knows
+// about SimConnect, or about where a transmission came from.
 //
 // It is the compatibility surface of the module: this file declares the
 // interfaces and value types the consuming application sees. Everything else in
@@ -11,7 +17,8 @@
 //   - no third party Go modules: go.mod has zero requires, stdlib only;
 //   - no cgo: every build is CGO_ENABLED=0, native APIs are reached through
 //     syscall (Windows) or subprocesses;
-//   - runtime target is Windows 10/11 x64, development happens on macOS.
+//   - runtime target is Windows 10/11 x64, because the first consumer is an
+//     MSFS add-on and MSFS is Windows-only; development happens on macOS.
 //
 // The application deals in text and semantic tags only. It never sees PCM,
 // grammars or voice model files.

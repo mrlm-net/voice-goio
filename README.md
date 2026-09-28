@@ -1,6 +1,14 @@
 # voice-goio
 
-Offline voice input and output for an MSFS ATC application, as a Go library.
+Offline ATC voice input and output, as a Go library.
+
+Controller speech out, pilot speech in, for any application that needs a radio:
+a flight simulator add-on, a training tool, a controller trainer. The library
+is aviation-specific — the normaliser, the grammar, the radio chain and the
+voice pool are all built around ATC phraseology — but it knows nothing about
+any particular simulator. There is no SimConnect here, no MSFS, no assumption
+about where the transmissions come from. An application hands it text and gets
+audio; it hands the application tags.
 
 **v0.2.0** — the platform-independent half is complete and tested; the two
 Windows backends are written and cross-compile but have not yet run against
@@ -8,7 +16,7 @@ real hardware. See [Platform status](#platform-status) before wiring it in.
 
 - **No services.** Everything runs on the user's PC. Works with the network adapter disabled.
 - **No dependencies.** `go.mod` has zero `require` lines. Standard library only, `CGO_ENABLED=0` everywhere.
-- **Windows is the runtime target**, macOS is the development machine. Windows-only code is cross-compiled on every commit so it cannot rot.
+- **Windows is the runtime target** (because the first consumer is an MSFS add-on, and MSFS is Windows-only), macOS is the development machine. Windows-only code is cross-compiled on every commit so it cannot rot.
 
 The application deals in **text and semantic tags**. It never sees PCM, grammars or voice model files.
 
@@ -272,7 +280,7 @@ the tag is the whole change.
 | Network disabled: full flow on Windows | ⏳ needs SAPI bring-up and a piper install |
 | TTS first sample < 300 ms warm | ⏳ needs the real piper binary to measure |
 
-## Consuming this from the sim application
+## Consuming this from an application
 
 The module is private, so both machines need:
 

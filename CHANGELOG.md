@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to voice-goio. The format follows
+All notable changes to voice-goio, an offline ATC voice library. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
