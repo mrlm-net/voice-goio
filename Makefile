@@ -83,6 +83,28 @@ bars:
 	$(GO) run ./cmd/voicecheck voices
 	$(GO) run ./cmd/voicecheck recog -backend fake -min 95
 
+# Build and test from a clean clone of HEAD.
+#
+# This is the check that a file exists in the repository rather than only on
+# the developer's disk. An over-broad .gitignore pattern once excluded
+# internal/wav from a release commit: everything built locally, and every CI
+# job failed on a fresh checkout. Run this before tagging.
+.PHONY: release-check
+release-check:
+	@set -e; \
+	dirty="$$(git status --porcelain)"; \
+	if [ -n "$$dirty" ]; then echo "working tree is dirty:"; echo "$$dirty"; exit 1; fi; \
+	tmp="$$(mktemp -d)"; \
+	trap 'rm -rf "$$tmp"' EXIT; \
+	git clone --quiet --no-local . "$$tmp/repo"; \
+	cd "$$tmp/repo"; \
+	echo "clean clone at $$(git rev-parse --short HEAD)"; \
+	CGO_ENABLED=0 go build ./...; \
+	CGO_ENABLED=0 go vet ./...; \
+	CGO_ENABLED=0 go test -count=1 ./... > /dev/null; \
+	for os in windows darwin linux; do GOOS=$$os CGO_ENABLED=0 go build ./...; done; \
+	echo "release-check: clean clone builds, vets, tests and cross-compiles"
+
 .PHONY: clean
 clean:
 	rm -rf $(OUT) wav wav-audit

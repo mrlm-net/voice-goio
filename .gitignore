@@ -33,6 +33,8 @@ go.work.sum
 
 .claude
 
-# Listening output from cmd/voicecheck and the demo
-wav/
-wav-audit/
+# Listening output from cmd/voicecheck and the demo.
+# Anchored with a leading slash: an unanchored "wav/" matches at every level
+# and would also exclude internal/wav, which is a package, not output.
+/wav/
+/wav-audit/
