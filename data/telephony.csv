@@ -26,13 +26,14 @@ CFG,Condor
 CKS,Connie
 CLX,Cargolux
 CPA,Cathay
-CSA,CSA
+CSA,CSA Lines
 CSN,China Southern
 CTN,Croatia
 DAL,Delta
 DLH,Lufthansa
 EIN,Shamrock
 ELY,El Al
+ENT,Enter
 ETD,Etihad
 EWG,Eurowings
 EZS,Topswiss
@@ -71,4 +72,4 @@ UPS,UPS
 VIR,Virgin
 VLG,Vueling
 VOI,Volaris
-WZZ,Wizz Air
+WZZ,Wizzair

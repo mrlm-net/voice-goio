@@ -10,6 +10,7 @@
 package normalise
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -20,11 +21,78 @@ import (
 // Normaliser holds the telephony table. The zero value is not usable; call New.
 type Normaliser struct {
 	telephony map[string]string
+	// byName finds a telephony designator written out ("Lufthansa 1675",
+	// "CSA Lines 273"): by its first word, upper case, the designators
+	// starting with it, as their words.
+	byName map[string][][]string
 }
 
 // New returns a Normaliser backed by the embedded telephony table.
 func New() *Normaliser {
-	return &Normaliser{telephony: parseTelephony(data.TelephonyCSV)}
+	n := &Normaliser{telephony: parseTelephony(data.TelephonyCSV), byName: map[string][][]string{}}
+	for _, tel := range n.telephony {
+		f := strings.Fields(tel)
+		if len(f) > 0 {
+			first := strings.ToUpper(f[0])
+			n.byName[first] = append(n.byName[first], f)
+		}
+	}
+	// Longest first: "CSA Lines" before a bare "CSA".
+	for _, names := range n.byName {
+		sort.Slice(names, func(i, j int) bool { return len(names[i]) > len(names[j]) })
+	}
+	return n
+}
+
+// spokenCallsign matches a callsign written as it is said at toks[i]: a
+// telephony designator from the table, in any case, then the flight number
+// ("Lufthansa 1675", "CSA Lines 273", "KLM 594"). It returns the
+// designator's words as the table writes them (an initialism stays in
+// capitals, which the engine reads as letters, not as the phonetic
+// alphabet), the number, its trailing punctuation and how many tokens it
+// took; 0 for none.
+func (n *Normaliser) spokenCallsign(toks []string, i int) (names []string, number, tail string, took int) {
+	w, t := splitPunct(toks[i])
+	if t != "" {
+		return nil, "", "", 0 // "Lufthansa," is not followed by its number
+	}
+	for _, cand := range n.byName[strings.ToUpper(w)] {
+		k := len(cand)
+		if i+k >= len(toks) {
+			continue
+		}
+		match := true
+		for j := 1; j < k; j++ {
+			wj, tj := splitPunct(toks[i+j])
+			if tj != "" || !strings.EqualFold(wj, cand[j]) {
+				match = false
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+		num, nt := splitPunct(toks[i+k])
+		if isFlightNumber(strings.ToUpper(num)) {
+			return cand, strings.ToUpper(num), nt, k + 1
+		}
+	}
+	return nil, "", "", 0
+}
+
+// isFlightNumber is a flight number as written after the designator: a
+// digit first, then digits and at most two letters ("1675", "12AB").
+func isFlightNumber(s string) bool {
+	if s == "" || len(s) > 6 || s[0] < '0' || s[0] > '9' || !isAlnum(s) {
+		return false
+	}
+	letters := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 'A' && s[i] <= 'Z' {
+			letters++
+		}
+	}
+	return letters <= 2
 }
 
 var std = New()
@@ -251,8 +319,16 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 		var words []string
 		isValue := true     // most branches below emit an information unit
 		isKeyword := false  // a group introduced by a keyword: RWY 27L, FL350
-		isCallsign := false // only the callsign branch sets this
+		isCallsign := false // only the callsign branches set this
+		names, number, numTail, took := n.spokenCallsign(toks, i)
 		switch {
+		// ---- a callsign written as said: "Lufthansa 1675" ----------------
+		case took > 0:
+			isKeyword, isCallsign = true, true
+			words = append(append([]string(nil), names...), n.digits(number, ph)...)
+			tail = numTail
+			i += took - 1
+
 		// ---- flight level -------------------------------------------------
 		case up == "FL" && isDigits(nextUp):
 			isKeyword = true
@@ -397,7 +473,9 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 		case acronyms[up] != "":
 			isKeyword = true
 			words = strings.Fields(acronyms[up])
-		case n.isCallsign(up):
+		// A registration is written in capitals ("OK-ABC"); "start-up" is a
+		// word.
+		case (word == up || !strings.Contains(up, "-")) && n.isCallsign(up):
 			isKeyword, isCallsign = true, true
 			words = n.callsignWords(up, ph)
 		// Only a token the application wrote in upper case is an identifier.
