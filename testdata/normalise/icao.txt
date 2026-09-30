@@ -35,7 +35,7 @@ FL100 | flight level one zero zero
 
 # --- callsigns ---
 DLH4EK | Lufthansa four echo kilo
-CSA1234 | CSA one two tree four
+CSA1234 | CSA Lines one two tree four
 TVS765 | Skytravel seven six fife
 ZZZ123 | zulu zulu zulu one two tree
 D-EFGH | delta echo foxtrot golf hotel
@@ -47,7 +47,7 @@ DESCEND AND MAINTAIN 5000 ft | descend and maintain fife thousand
 
 # --- whole transmissions ---
 BAW123 descend FL100, QNH 1013 | Speedbird one two tree, descend flight level one zero zero, Q N H one zero one tree
-CSA1234 contact Praha Radar on 127.45 | CSA one two tree four, contact Praha Radar on one two seven decimal four fife
+CSA1234 contact Praha Radar on 127.45 | CSA Lines one two tree four, contact Praha Radar on one two seven decimal four fife
 OK-ABC taxi via TWY A3 and B, hold short RWY 24 | oscar kilo alpha bravo charlie, taxi via taxiway alpha tree, bravo, hold short runway two four
 BAW123 cleared ILS approach RWY 06, report established | Speedbird one two tree, cleared I L S approach runway zero six, report established
 
@@ -70,3 +70,17 @@ OK-ABC taxi to RWY 27L at A1 via TWY A3 and B | oscar kilo alpha bravo charlie, 
 OK-ABC taxi to stand 42 via TWY B | oscar kilo alpha bravo charlie, taxi to stand four two, via taxiway bravo
 BAW123 RWY 27L at A1 cleared for takeoff | Speedbird one two tree, runway two seven left at alpha one, cleared for takeoff
 DLH4EK go around, I say again go around | Lufthansa four echo kilo, go around, i say again go around
+
+# --- callsigns written as said (the SDK's radio text): the designator's
+# words as the table writes them, then the digits; an initialism stays in
+# capitals, read as letters rather than the phonetic alphabet ---
+Lufthansa 1675, runway 06, cleared to land | Lufthansa one six seven fife, runway zero six, cleared to land
+LUFTHANSA 1675, runway 06 | Lufthansa one six seven fife, runway zero six
+CSA Lines 273, runway 24 | CSA Lines two seven tree, runway two four
+KLM 594, contact Ruzyne Tower 134.56 | KLM fife niner four, contact Ruzyne Tower one tree four decimal fife six
+Wizzair 1529, runway 24 | Wizzair one fife two niner, runway two four
+Speedbird 12AB, runway 24 | Speedbird one two alpha bravo, runway two four
+Holding point runway 06 via B2, Lufthansa 1675 | Holding point runway zero six, via bravo two, Lufthansa one six seven fife
+# a hyphenated word is a word, a hyphenated capital group a registration
+Skytravel 795, push back and start-up approved | Skytravel seven niner fife, push back and start-up approved
+OK-ABC | oscar kilo alpha bravo charlie

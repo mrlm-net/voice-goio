@@ -7,37 +7,37 @@
 {"callsigns": ["BAW123", "CSA1234", "OK-ABC", "DLH4EK", "RYR89AB"]}
 {"text": "Speedbird one two three descending flight level one zero zero", "tags": {"intent": "readback_altitude", "callsign": "BAW123", "value": "FL100"}}
 {"text": "Speedbird one two tree climbing flight level tree fife zero", "tags": {"intent": "readback_altitude", "callsign": "BAW123", "value": "FL350"}}
-{"text": "CSA one two three four maintaining five thousand", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "5000"}}
-{"text": "CSA one two three four turn left heading two seven zero", "tags": {"intent": "readback_heading", "callsign": "CSA1234", "value": "270"}}
+{"text": "CSA Lines one two three four maintaining five thousand", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "5000"}}
+{"text": "CSA Lines one two three four turn left heading two seven zero", "tags": {"intent": "readback_heading", "callsign": "CSA1234", "value": "270"}}
 {"text": "Lufthansa four echo kilo heading zero niner zero", "tags": {"intent": "readback_heading", "callsign": "DLH4EK", "value": "090"}}
 {"text": "Speedbird one two three reduce speed two five zero knots", "tags": {"intent": "readback_speed", "callsign": "BAW123", "value": "250"}}
 {"text": "oscar kilo alpha bravo charlie squawk four three two one", "tags": {"intent": "readback_squawk", "callsign": "OK-ABC", "value": "4321"}}
 {"text": "Ryanair eight niner alpha bravo contact tower one one eight decimal one zero", "tags": {"intent": "readback_frequency", "callsign": "RYR89AB", "value": "118.10"}}
-{"text": "CSA one two three four going to one two seven decimal four five", "tags": {"intent": "readback_frequency", "callsign": "CSA1234", "value": "127.45"}}
+{"text": "CSA Lines one two three four going to one two seven decimal four five", "tags": {"intent": "readback_frequency", "callsign": "CSA1234", "value": "127.45"}}
 {"text": "oscar kilo alpha bravo charlie runway two seven left", "tags": {"intent": "readback_runway", "callsign": "OK-ABC", "value": "27L"}}
 {"text": "oscar kilo alpha bravo charlie taxi via alpha three then bravo", "tags": {"intent": "readback_taxi", "callsign": "OK-ABC", "value": "A3 B"}}
 {"text": "Speedbird one two three qnh one zero one three", "tags": {"intent": "readback_qnh", "callsign": "BAW123", "value": "1013"}}
 {"text": "Lufthansa four echo kilo request climb flight level three seven zero", "tags": {"intent": "request_climb", "callsign": "DLH4EK", "value": "FL370"}}
 {"text": "Speedbird one two three request descent", "tags": {"intent": "request_descent", "callsign": "BAW123", "value": ""}}
-{"text": "CSA one two three four request direct kilo echo november alpha golf", "tags": {"intent": "request_direct", "callsign": "CSA1234", "value": "KENAG"}}
+{"text": "CSA Lines one two three four request direct kilo echo november alpha golf", "tags": {"intent": "request_direct", "callsign": "CSA1234", "value": "KENAG"}}
 {"text": "oscar kilo alpha bravo charlie request pushback", "tags": {"intent": "request_pushback", "callsign": "OK-ABC", "value": ""}}
 {"text": "oscar kilo alpha bravo charlie request taxi", "tags": {"intent": "request_taxi", "callsign": "OK-ABC", "value": ""}}
 {"text": "Ryanair eight niner alpha bravo ready for departure", "tags": {"intent": "report_ready", "callsign": "RYR89AB", "value": ""}}
 {"text": "Speedbird one two three established on the localizer", "tags": {"intent": "report_established", "callsign": "BAW123", "value": ""}}
-{"text": "CSA one two three four runway vacated", "tags": {"intent": "report_vacated", "callsign": "CSA1234", "value": ""}}
+{"text": "CSA Lines one two three four runway vacated", "tags": {"intent": "report_vacated", "callsign": "CSA1234", "value": ""}}
 {"text": "Lufthansa four echo kilo going around", "tags": {"intent": "report_going_around", "callsign": "DLH4EK", "value": ""}}
 {"text": "Speedbird one two three with you", "tags": {"intent": "checkin", "callsign": "BAW123", "value": ""}}
-{"text": "CSA one two three four passing flight level two four zero", "tags": {"intent": "checkin", "callsign": "CSA1234", "value": "FL240"}}
+{"text": "CSA Lines one two three four passing flight level two four zero", "tags": {"intent": "checkin", "callsign": "CSA1234", "value": "FL240"}}
 {"text": "Speedbird one two three say again", "tags": {"intent": "say_again", "callsign": "BAW123", "value": ""}}
 {"text": "oscar kilo alpha bravo charlie wilco", "tags": {"intent": "wilco", "callsign": "OK-ABC", "value": ""}}
 {"text": "what is the weather like in prague tomorrow", "tags": {"intent": "say_again", "value": "", "reason": "no_callsign"}}
 {"text": "mayday mayday mayday Speedbird one two three engine failure descending", "tags": {"intent": "mayday", "callsign": "BAW123", "value": "engine_failure"}}
 {"text": "pan pan pan pan pan pan oscar kilo alpha bravo charlie low fuel", "tags": {"intent": "pan_pan", "callsign": "OK-ABC", "value": "low_fuel"}}
-{"text": "CSA one two three four mayday mayday mayday medical emergency request immediate return", "tags": {"intent": "mayday", "callsign": "CSA1234", "value": "medical"}}
+{"text": "CSA Lines one two three four mayday mayday mayday medical emergency request immediate return", "tags": {"intent": "mayday", "callsign": "CSA1234", "value": "medical"}}
 {"text": "mayday mayday mayday unknown traffic smoke in the cockpit", "tags": {"intent": "mayday", "value": "smoke"}}
 {"text": "London Control Speedbird one two three flight level tree six zero", "tags": {"intent": "checkin", "callsign": "BAW123", "value": "FL360"}}
 {"text": "one one niner decimal seven two zero Speedbird one two three", "tags": {"intent": "readback_frequency", "callsign": "BAW123", "value": "119.720"}}
-{"text": "descend tree thousand feet heading two seven zero speed one eight zero knots CSA one two three four", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "3000"}}
+{"text": "descend tree thousand feet heading two seven zero speed one eight zero knots CSA Lines one two three four", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "3000"}}
 {"text": "taxi to stand four two via bravo and alpha oscar kilo alpha bravo charlie", "tags": {"intent": "readback_taxi", "callsign": "OK-ABC", "value": "B A"}}
 {"text": "CSA1234 ident", "tags": {"intent": "ident", "callsign": "CSA1234", "value": ""}}
 {"text": "Speedbird one two three squawk ident", "tags": {"intent": "ident", "callsign": "BAW123", "value": ""}}
