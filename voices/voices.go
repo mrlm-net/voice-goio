@@ -167,6 +167,27 @@ type Pool struct {
 	mu   sync.Mutex
 	used map[string]map[string]bool // airport -> "model#speaker" -> taken
 	held map[string]voicegoio.VoiceProfile
+	// have is the set of manifest models whose files are in Dir, looked up
+	// once (haveOnce).
+	have     map[string]bool
+	haveOnce sync.Once
+}
+
+// installed reports whether model is downloaded into the pool's Dir. A
+// voice that is not cannot be spoken: assigning it left an airport silent
+// (the speaker logged "not found" and said nothing). When no model at all
+// is installed, every model counts, so assignment stays usable (and
+// reproducible) before the first download.
+func (p *Pool) installed(model string) bool {
+	p.haveOnce.Do(func() {
+		p.have = map[string]bool{}
+		for _, m := range p.man.Models {
+			if _, err := os.Stat(filepath.Join(p.opt.Dir, filepath.FromSlash(m.ONNX))); err == nil {
+				p.have[m.Name] = true
+			}
+		}
+	})
+	return len(p.have) == 0 || p.have[model]
 }
 
 // NewPool prepares assignment over a manifest.
@@ -241,13 +262,16 @@ func (p *Pool) atisVoice() voicegoio.VoiceProfile {
 		Accent:      AtisAccent,
 	}
 	for _, name := range atisPreference {
-		if _, ok := p.man.Model(name); ok {
+		if _, ok := p.man.Model(name); ok && p.installed(name) {
 			v.Model = name
 			return v
 		}
 	}
-	if len(p.man.Models) > 0 {
-		v.Model = p.man.Models[0].Name
+	for _, m := range p.man.Models {
+		if p.installed(m.Name) {
+			v.Model = m.Name
+			break
+		}
 	}
 	return v
 }
@@ -342,7 +366,7 @@ func (p *Pool) candidates(icaoPrefix string) []candidate {
 
 	var out []candidate
 	for _, m := range p.man.Models {
-		if p.opt.CommercialOnly && !permissiveLicences[m.License] {
+		if p.opt.CommercialOnly && !permissiveLicences[m.License] || !p.installed(m.Name) {
 			continue
 		}
 		for _, s := range speakersOf(m, p.opt.AllowUnaudited) {

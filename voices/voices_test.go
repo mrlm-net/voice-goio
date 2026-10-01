@@ -1,6 +1,8 @@
 package voices_test
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -14,7 +16,37 @@ func newPool(t *testing.T) *voices.Pool {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return voices.NewPool(m, voices.PoolOptions{Seed: 1, AllowUnaudited: true})
+	// An empty folder: nothing installed, so every model counts and the
+	// tests do not depend on what this machine has downloaded.
+	return voices.NewPool(m, voices.PoolOptions{Dir: t.TempDir(), Seed: 1, AllowUnaudited: true})
+}
+
+// Only installed voices are assigned: an airport whose voices are not
+// downloaded was silent (the speaker logged "not found" and said nothing).
+// With one model in the folder, every position and the ATIS get it.
+func TestAssignsOnlyInstalledVoices(t *testing.T) {
+	m, err := voices.LoadDefault()
+	if err != nil {
+		t.Fatal(err)
+	}
+	model, ok := m.Model("en_GB-alan-medium")
+	if !ok {
+		t.Fatal("en_GB-alan-medium not in the manifest")
+	}
+	dir := t.TempDir()
+	onnx := filepath.Join(dir, filepath.FromSlash(model.ONNX))
+	if err := os.MkdirAll(filepath.Dir(onnx), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(onnx, []byte("onnx"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := voices.NewPool(m, voices.PoolOptions{Dir: dir, Seed: 1, AllowUnaudited: true})
+	for _, k := range []voicegoio.ControllerKind{voicegoio.Tower, voicegoio.Ground, voicegoio.ATIS} {
+		if v := p.Assign("LKPR", k); v.Model != model.Name {
+			t.Errorf("%s at LKPR: %q, want the installed %q", k, v.Model, model.Name)
+		}
+	}
 }
 
 // The quality bar in SPEC.md is BeyondATC's free "Basic" tier: about 100 local
