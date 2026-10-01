@@ -5,6 +5,12 @@ All notable changes to voice-goio, an offline ATC voice library. The format foll
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
+## [Unreleased]
+
+### Fixed
+
+- normalise: a lone A or I in a taxi route after "via" is the taxiway and is spelled: "via H, A" says "via hotel, alpha", not "via hotel, a".
+
 ## [0.3.1] — 2026-09-28
 
 No Go API change: the types and functions are identical to 0.3.0. What changed
