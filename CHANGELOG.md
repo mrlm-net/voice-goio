@@ -7,6 +7,10 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Changed
+
+- License: new versions are under the Business Source License 1.1 instead of Apache-2.0. Non-commercial use (personal and hobby use, the flight-simulation community, education, research, non-profits) is allowed; commercial use, such as a paid add-on or product, a paid service or use inside a business, needs a separate licence. Each version becomes Apache-2.0 four years after it is published. Versions up to and including v0.3.1 stay under Apache-2.0.
+
 ### Fixed
 
 - normalise: a lone A or I in a taxi route after "via" is the taxiway and is spelled: "via H, A" says "via hotel, alpha", not "via hotel, a".
