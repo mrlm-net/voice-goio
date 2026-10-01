@@ -87,3 +87,10 @@ OK-ABC | oscar kilo alpha bravo charlie
 # A lone A in a taxi route is the taxiway, not the article
 CSA1, taxi to and hold short of runway 24 via H, A | CSA Lines one, taxi to and hold short of runway two four, via hotel, alpha
 CSA1, taxi via A, B2, Z | CSA Lines one, taxi via alpha, bravo two, zulu
+# Aircraft types after their manufacturer: as crews say them.
+CSA1, behind the landing Airbus A321, line up and wait runway 24, behind | CSA Lines one, behind the landing Airbus A three twenty-one, line up and wait runway two four, behind
+behind the Airbus A320neo | behind the Airbus A three twenty neo
+behind the landing Boeing 737 | behind the landing Boeing seven thirty-seven
+behind the landing Embraer 190 | behind the landing Embraer one ninety
+behind the ATR 72 | behind the A T R seventy-two
+behind the Boeing 707 | behind the Boeing seven oh seven
