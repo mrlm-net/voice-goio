@@ -362,3 +362,7 @@ Versions describe what changed, not what is planned. SPEC.md §5 earmarked
 because it added API, and pre-assigning numbers to milestones turned out to be
 a way of being wrong twice. The bring-up will land in whatever version follows
 it.
+
+## License
+
+Business Source License 1.1, see [LICENSE](LICENSE), for versions after v0.3.1. Non-commercial use is free: personal and hobby use, the flight-simulation community, education, research and non-profits. Commercial use, such as a paid add-on or product, a paid service or use inside a business, needs a separate licence; [open an issue](https://github.com/mrlm-net/voice-goio/issues) to ask. Each version becomes Apache-2.0 four years after it is published, and versions up to and including v0.3.1 remain under Apache-2.0.
