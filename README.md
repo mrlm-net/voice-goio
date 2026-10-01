@@ -17,7 +17,7 @@ audio; it hands the application tags.
 > reasoning and open questions rather than a stable contract. Do not build on it
 > yet unless you are the one building it.
 
-**v0.3.1** — the platform-independent half is complete and tested; the two
+**v0.4.0** — the platform-independent half is complete and tested; the two
 Windows backends are written and cross-compile but have not yet run against
 real hardware. See [Platform status](#platform-status) before wiring it in.
 
@@ -320,7 +320,7 @@ Remove it, or drop the `replace`, before a release build. When the library
 settles:
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.3.1
+go get github.com/mrlm-net/voice-goio@v0.4.0
 ```
 
 ### What to wire first
@@ -356,6 +356,7 @@ first build.
 | `v0.1.x` | Everything platform-independent, complete and tested. Windows backends compile and are wired, but have not run against hardware. |
 | `v0.2.0` | Recognition failure reasons (`TagReason`), session recording, emergency and deviation phraseology. |
 | `v0.3.0` | Departure clearance readbacks, WAV input for the Windows recogniser so the corpus runs unattended, and a fix for models downloading into the working directory. |
+| `v0.4.0` | Business Source License 1.1 (non-commercial; Apache-2.0 four years after each release). Taxiway letters after "via" are spelled. |
 
 Versions describe what changed, not what is planned. SPEC.md §5 earmarked
 `v0.2.0` for the Windows bring-up; that number went to an earlier release

@@ -5,7 +5,7 @@ All notable changes to voice-goio, an offline ATC voice library. The format foll
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
-## [Unreleased]
+## [0.4.0] — 2026-10-02
 
 ### Changed
 
