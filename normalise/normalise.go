@@ -191,6 +191,7 @@ var acronyms = map[string]string{
 	"ATIS": "atis", "SID": "sid", "STAR": "star", "CAVOK": "cav oh kay",
 	"QNH":  "Q N H",
 	"PAPI": "papi", "FBO": "F B O", "GPU": "G P U",
+	"ATR": "A T R", "CRJ": "C R J",
 }
 
 // plainWords are short tokens that are ordinary English even when the
@@ -298,12 +299,18 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 	// route: inside a taxi route after "via" ("via H, A, B2"), where a
 	// lone A or I is a taxiway, not the article or the pronoun.
 	route := false
+	// prevWord: the word before, to read an aircraft model after its
+	// manufacturer ("Airbus A321": "A three twenty-one", not "alpha three
+	// two one").
+	prevWord := ""
 	for i := 0; i < len(toks); i++ {
 		raw := toks[i]
 		word, tail := splitPunct(raw)
 		if word == "" {
 			continue
 		}
+		afterMaker := manufacturers[strings.ToUpper(prevWord)]
+		prevWord = word
 		up := strings.ToUpper(word)
 		inRoute := route && isTaxiwayID(word)
 		route = strings.EqualFold(word, "via") || inRoute && strings.HasSuffix(tail, ",")
@@ -326,7 +333,12 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 		isKeyword := false  // a group introduced by a keyword: RWY 27L, FL350
 		isCallsign := false // only the callsign branches set this
 		names, number, numTail, took := n.spokenCallsign(toks, i)
+		model, isModel := typeWords(up)
 		switch {
+		// ---- an aircraft type: "Airbus A321", "Boeing 737" ----------------
+		case afterMaker && isModel:
+			words = model
+
 		// ---- a callsign written as said: "Lufthansa 1675" ----------------
 		case took > 0:
 			isKeyword, isCallsign = true, true
