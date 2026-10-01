@@ -295,6 +295,9 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 	emergWord, emergRun := "", 0
 	prevEmerg := false
 
+	// route: inside a taxi route after "via" ("via H, A, B2"), where a
+	// lone A or I is a taxiway, not the article or the pronoun.
+	route := false
 	for i := 0; i < len(toks); i++ {
 		raw := toks[i]
 		word, tail := splitPunct(raw)
@@ -302,6 +305,8 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 			continue
 		}
 		up := strings.ToUpper(word)
+		inRoute := route && isTaxiwayID(word)
+		route = strings.EqualFold(word, "via") || inRoute && strings.HasSuffix(tail, ",")
 
 		// next returns the following token stripped of punctuation, and a
 		// closure to consume it once a keyword has claimed it.
@@ -480,7 +485,7 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 			words = n.callsignWords(up, ph)
 		// Only a token the application wrote in upper case is an identifier.
 		// "taxi" is a word; "TWY", "LKPR" and "A3" are things to spell.
-		case word == up && isIdentifier(up) && !plainWords[up]:
+		case word == up && isIdentifier(up) && (!plainWords[up] || inRoute):
 			isKeyword = true
 			words = n.digits(up, ph)
 
