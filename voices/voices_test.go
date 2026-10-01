@@ -189,3 +189,18 @@ func TestATISVoiceIsFixedEverywhere(t *testing.T) {
 		t.Errorf("assigning the ATIS changed the tower voice: %+v vs %+v", tower, other)
 	}
 }
+
+// An excluded model is never assigned, even where its accent fits best
+// (LKPR prefers the Czech accent).
+func TestExcludedVoicesAreNotAssigned(t *testing.T) {
+	m, err := voices.LoadDefault()
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := voices.NewPool(m, voices.PoolOptions{Dir: t.TempDir(), Seed: 1, AllowUnaudited: true, Exclude: []string{"cs_CZ-jirka-medium"}})
+	for _, k := range []voicegoio.ControllerKind{voicegoio.Tower, voicegoio.Ground, voicegoio.Approach} {
+		if v := p.Assign("LKPR", k); v.Model == "cs_CZ-jirka-medium" {
+			t.Errorf("%s at LKPR got the excluded %s", k, v.Model)
+		}
+	}
+}

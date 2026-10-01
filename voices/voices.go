@@ -16,6 +16,7 @@ import (
 	"hash/fnv"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -158,6 +159,10 @@ type PoolOptions struct {
 	// what makes a freshly downloaded model usable before anyone has listened
 	// to it.
 	AllowUnaudited bool
+	// Exclude lists models never to assign, e.g. a voice that reads English
+	// badly (simconnect's airport map: cs_CZ-jirka-medium through the
+	// en-us phonemizer).
+	Exclude []string
 }
 
 // Pool assigns voices to controllers.
@@ -187,6 +192,9 @@ func (p *Pool) installed(model string) bool {
 			}
 		}
 	})
+	if slices.Contains(p.opt.Exclude, model) {
+		return false
+	}
 	return len(p.have) == 0 || p.have[model]
 }
 
