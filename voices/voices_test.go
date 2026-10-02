@@ -1,6 +1,7 @@
 package voices_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -203,4 +204,41 @@ func TestExcludedVoicesAreNotAssigned(t *testing.T) {
 			t.Errorf("%s at LKPR got the excluded %s", k, v.Model)
 		}
 	}
+}
+
+// FemaleShare: about one position in nine gets a female voice (1:8), the
+// rest a male one, from the speakers whose gender the manifest documents.
+func TestFemaleShare(t *testing.T) {
+	m, err := voices.LoadDefault()
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := voices.NewPool(m, voices.PoolOptions{Dir: t.TempDir(), Seed: 3, AllowUnaudited: true, FemaleShare: 1.0 / 9})
+	gender := func(v voicegoio.VoiceProfile) string {
+		model, ok := m.Model(v.Model)
+		if !ok {
+			return ""
+		}
+		for _, s := range model.Speakers {
+			if s.ID == v.SpeakerID {
+				return s.Gender
+			}
+		}
+		return ""
+	}
+	female, total := 0, 0
+	for i := range 300 {
+		for _, kind := range []voicegoio.ControllerKind{voicegoio.Ground, voicegoio.Tower, voicegoio.Approach} {
+			v := p.Assign(fmt.Sprintf("K%03d", i), kind)
+			total++
+			if gender(v) == "F" {
+				female++
+			}
+		}
+	}
+	share := float64(female) / float64(total)
+	if share < 0.07 || share > 0.16 {
+		t.Errorf("%d of %d positions female (%.0f%%), want about 1 in 9", female, total, share*100)
+	}
+	t.Logf("%d of %d positions female (%.1f%%)", female, total, share*100)
 }
