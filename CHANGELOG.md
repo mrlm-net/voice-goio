@@ -5,6 +5,12 @@ All notable changes to voice-goio, an offline ATC voice library. The format foll
 [semantic versioning](https://semver.org/) with `voicegoio.go` as the
 compatibility surface.
 
+## [Unreleased]
+
+### Added
+
+- voices: `Speaker.Gender` ("F", "M" or "") and `PoolOptions.FemaleShare`. A position gets a voice of its gender (the share of positions that get a female one, e.g. 1/9 for 1:8), the best of that gender in its accent tier, and any voice when none is free. The genders come from the sources: VCTK's 109 speakers from the corpus's own speaker-info.txt (version 0.92, Edinburgh DataShare), which also gives each speaker's accent in place of the round-robin placeholders (63 female, 46 male); lessac (Blizzard 2013 corpus page), alba (DataShare abstract) and ryan (RyanSpeech paper); hfc_male, hfc_female, northern_english_male and southern_english_female by their names. alan and joe stay without one: their sources do not say.
+
 ## [0.4.0] — 2026-10-02
 
 ### Changed

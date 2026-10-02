@@ -38,6 +38,9 @@ type Speaker struct {
 	Accent  string `json:"accent"`
 	Quality int    `json:"quality"` // 1-5, set during the audit
 	Pass    bool   `json:"pass"`
+	// Gender is "F" or "M" where the model's source documents it (VCTK's
+	// speaker-info.txt, a dataset's description), "" where it does not.
+	Gender string `json:"gender,omitempty"`
 }
 
 // Model is one .onnx/.onnx.json pair.
@@ -163,6 +166,11 @@ type PoolOptions struct {
 	// badly (simconnect's airport map: cs_CZ-jirka-medium through the
 	// en-us phonemizer).
 	Exclude []string
+	// FemaleShare is the share of positions given a female voice (0.11 is
+	// one in nine: 1:8); 0 means no preference. A position gets the best
+	// voice of its gender in its accent tier, and any voice when none has
+	// it. Voices whose gender is not documented count as not female.
+	FemaleShare float64
 }
 
 // Pool assigns voices to controllers.
@@ -227,6 +235,7 @@ type candidate struct {
 	speaker int
 	accent  string
 	score   int
+	female  bool
 }
 
 // accentsFor returns the preferred accents for an airport, longest prefix
@@ -317,12 +326,24 @@ func (p *Pool) Assign(icaoPrefix string, kind voicegoio.ControllerKind) voicegoi
 	h := hash64(p.opt.Seed, key)
 	var chosen candidate
 	found := false
-	for _, tier := range tiers(cands) {
-		offset := int(h % uint64(len(tier)))
-		for i := range tier {
-			c := tier[(offset+i)%len(tier)]
-			if !taken[fmt.Sprintf("%s#%d", c.model, c.speaker)] {
-				chosen, found = c, true
+	// The gender this position gets (FemaleShare): first a voice of it,
+	// then, none free, any.
+	passes := []func(candidate) bool{func(candidate) bool { return true }}
+	if share := p.opt.FemaleShare; share > 0 {
+		female := float64(hash64(p.opt.Seed, key+"/gender")%10000) < share*10000
+		passes = append([]func(candidate) bool{func(c candidate) bool { return c.female == female }}, passes...)
+	}
+	for _, fits := range passes {
+		for _, tier := range tiers(cands) {
+			offset := int(h % uint64(len(tier)))
+			for i := range tier {
+				c := tier[(offset+i)%len(tier)]
+				if fits(c) && !taken[fmt.Sprintf("%s#%d", c.model, c.speaker)] {
+					chosen, found = c, true
+					break
+				}
+			}
+			if found {
 				break
 			}
 		}
@@ -389,7 +410,7 @@ func (p *Pool) candidates(icaoPrefix string) []candidate {
 			} else {
 				score = score*10 + s.Quality
 			}
-			out = append(out, candidate{model: m.Name, speaker: s.ID, accent: s.Accent, score: score})
+			out = append(out, candidate{model: m.Name, speaker: s.ID, accent: s.Accent, score: score, female: s.Gender == "F"})
 		}
 	}
 	sort.SliceStable(out, func(i, j int) bool {

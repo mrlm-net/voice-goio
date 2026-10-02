@@ -10,7 +10,880 @@
       "accent": "en-GB",
       "speaker_count": 109,
       "espeak_override": "",
-      "speakers": [],
+      "speakers": [
+        {
+          "id": 0,
+          "label": "p239",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 1,
+          "label": "p236",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 2,
+          "label": "p264",
+          "accent": "en-GB-scottish",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 3,
+          "label": "p250",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 4,
+          "label": "p259",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 5,
+          "label": "p247",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 6,
+          "label": "p261",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 7,
+          "label": "p263",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 8,
+          "label": "p283",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 9,
+          "label": "p286",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 10,
+          "label": "p274",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 11,
+          "label": "p276",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 12,
+          "label": "p270",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 13,
+          "label": "p281",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 14,
+          "label": "p277",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 15,
+          "label": "p231",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 16,
+          "label": "p271",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 17,
+          "label": "p238",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 18,
+          "label": "p257",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 19,
+          "label": "p273",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 20,
+          "label": "p284",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 21,
+          "label": "p329",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 22,
+          "label": "p361",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 23,
+          "label": "p287",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 24,
+          "label": "p360",
+          "accent": "en-US",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 25,
+          "label": "p374",
+          "accent": "en-AU",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 26,
+          "label": "p376",
+          "accent": "en-IN",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 27,
+          "label": "p310",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 28,
+          "label": "p304",
+          "accent": "en-IE",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 29,
+          "label": "p334",
+          "accent": "en-US",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 30,
+          "label": "p340",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 31,
+          "label": "p323",
+          "accent": "en-ZA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 32,
+          "label": "p347",
+          "accent": "en-ZA",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 33,
+          "label": "p330",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 34,
+          "label": "p308",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 35,
+          "label": "p314",
+          "accent": "en-ZA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 36,
+          "label": "p317",
+          "accent": "en-CA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 37,
+          "label": "p339",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 38,
+          "label": "p311",
+          "accent": "en-US",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 39,
+          "label": "p294",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 40,
+          "label": "p305",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 41,
+          "label": "p266",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 42,
+          "label": "p335",
+          "accent": "en-NZ",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 43,
+          "label": "p318",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 44,
+          "label": "p351",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 45,
+          "label": "p333",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 46,
+          "label": "p313",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 47,
+          "label": "p316",
+          "accent": "en-CA",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 48,
+          "label": "p244",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 49,
+          "label": "p307",
+          "accent": "en-CA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 50,
+          "label": "p363",
+          "accent": "en-CA",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 51,
+          "label": "p336",
+          "accent": "en-ZA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 52,
+          "label": "p297",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 53,
+          "label": "p312",
+          "accent": "en-CA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 54,
+          "label": "p267",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 55,
+          "label": "p275",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 56,
+          "label": "p295",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 57,
+          "label": "p258",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 58,
+          "label": "p288",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 59,
+          "label": "p301",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 60,
+          "label": "p232",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 61,
+          "label": "p292",
+          "accent": "en-IE",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 62,
+          "label": "p272",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 63,
+          "label": "p280",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 64,
+          "label": "p278",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 65,
+          "label": "p341",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 66,
+          "label": "p268",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 67,
+          "label": "p298",
+          "accent": "en-IE",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 68,
+          "label": "p299",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 69,
+          "label": "p279",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 70,
+          "label": "p285",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 71,
+          "label": "p326",
+          "accent": "en-AU",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 72,
+          "label": "p300",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 73,
+          "label": "s5",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 74,
+          "label": "p230",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 75,
+          "label": "p345",
+          "accent": "en-US",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 76,
+          "label": "p254",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 77,
+          "label": "p269",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 78,
+          "label": "p293",
+          "accent": "en-IE",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 79,
+          "label": "p252",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 80,
+          "label": "p262",
+          "accent": "en-GB-scottish",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 81,
+          "label": "p243",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 82,
+          "label": "p227",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 83,
+          "label": "p343",
+          "accent": "en-CA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 84,
+          "label": "p255",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 85,
+          "label": "p229",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 86,
+          "label": "p240",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 87,
+          "label": "p248",
+          "accent": "en-IN",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 88,
+          "label": "p253",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 89,
+          "label": "p233",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 90,
+          "label": "p228",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 91,
+          "label": "p282",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 92,
+          "label": "p251",
+          "accent": "en-IN",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 93,
+          "label": "p246",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 94,
+          "label": "p234",
+          "accent": "en-GB-scottish",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 95,
+          "label": "p226",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 96,
+          "label": "p260",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 97,
+          "label": "p245",
+          "accent": "en-IE",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 98,
+          "label": "p241",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 99,
+          "label": "p303",
+          "accent": "en-CA",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 100,
+          "label": "p265",
+          "accent": "en-GB-scottish",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 101,
+          "label": "p306",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 102,
+          "label": "p237",
+          "accent": "en-GB-scottish",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 103,
+          "label": "p249",
+          "accent": "en-GB-scottish",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 104,
+          "label": "p256",
+          "accent": "en-GB",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 105,
+          "label": "p302",
+          "accent": "en-CA",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 106,
+          "label": "p364",
+          "accent": "en-IE",
+          "gender": "M",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 107,
+          "label": "p225",
+          "accent": "en-GB",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        },
+        {
+          "id": 108,
+          "label": "p362",
+          "accent": "en-US",
+          "gender": "F",
+          "quality": 0,
+          "pass": false
+        }
+      ],
       "accents": [
         "en-GB",
         "en-GB-scottish",
@@ -128,7 +1001,8 @@
           "label": "ryan",
           "accent": "en-US",
           "quality": 5,
-          "pass": true
+          "pass": true,
+          "gender": "M"
         }
       ]
     },
@@ -168,7 +1042,8 @@
           "label": "lessac",
           "accent": "en-US",
           "quality": 5,
-          "pass": true
+          "pass": true,
+          "gender": "F"
         }
       ]
     },
@@ -188,7 +1063,8 @@
           "label": "hfc_male",
           "accent": "en-US",
           "quality": 4,
-          "pass": true
+          "pass": true,
+          "gender": "M"
         }
       ]
     },
@@ -208,7 +1084,8 @@
           "label": "hfc_female",
           "accent": "en-US",
           "quality": 4,
-          "pass": true
+          "pass": true,
+          "gender": "F"
         }
       ]
     },
@@ -248,7 +1125,8 @@
           "label": "alba",
           "accent": "en-GB-scottish",
           "quality": 4,
-          "pass": true
+          "pass": true,
+          "gender": "F"
         }
       ]
     },
@@ -268,7 +1146,8 @@
           "label": "northern_english_male",
           "accent": "en-GB-north",
           "quality": 4,
-          "pass": true
+          "pass": true,
+          "gender": "M"
         }
       ]
     },
@@ -288,7 +1167,8 @@
           "label": "southern_english_female",
           "accent": "en-GB-south",
           "quality": 3,
-          "pass": true
+          "pass": true,
+          "gender": "F"
         }
       ]
     },
