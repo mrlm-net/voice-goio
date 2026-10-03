@@ -17,7 +17,7 @@ audio; it hands the application tags.
 > reasoning and open questions rather than a stable contract. Do not build on it
 > yet unless you are the one building it.
 
-**v0.4.0** — the platform-independent half is complete and tested; the two
+**v0.5.0** — the platform-independent half is complete and tested; the two
 Windows backends are written and cross-compile but have not yet run against
 real hardware. See [Platform status](#platform-status) before wiring it in.
 
@@ -114,6 +114,32 @@ digits: `CSA1234 with you, 15000` and `DLH4EK request climb FL370` tag exactly
 as their spoken equivalents do. Speech never produces those forms, so nothing
 in the Windows backend has to cope with them.
 
+### The radio, heard: `speaker`
+
+`speaker` is the whole output side with the rules the simconnect airport map
+uses, so every application sounds the same: piper with the default pool (no
+Czech voice reading English, one female voice in nine), a voice per
+controller position with shifts, a voice per crew, one frequency followed,
+one call at a time with 1 to 5 s between calls, nothing said more than 60 s
+late, and the ATIS as a looping broadcast joined mid-sentence.
+
+```go
+sp := speaker.New(speaker.Options{PiperPath: piperExe, VoicesDir: voicesDir})
+sp.Set(true, "118.105")                 // on, following one frequency
+sp.SetATIS("122.155", "LKPR", atisText) // the broadcast on its frequency
+sp.Hear(speaker.Utterance{Airport: "LKPR", Position: speaker.PosTower,
+    Callsign: "CSA123", Frequency: "118.105", Text: "CSA123, runway 24, cleared to land"})
+fmt.Println(sp.State().Status)          // "on (piper)", or why it is silent
+```
+
+The package documentation (`go doc ./speaker`) has the mapping from
+simconnect's `traffic.Transmission` and what has to sit beside the
+application at runtime: piper's folder (`bin/piper/piper.exe` next to the
+executable by default, with its DLLs, `espeak-ng-data` and
+`libtashkeel_model.ort`) and the voice models (`%LOCALAPPDATA%\voice-goio\voices`
+by default). The speaker writes nothing on Windows, so both can live in a
+read-only install folder.
+
 ## What is where
 
 | Path | What it does |
@@ -127,6 +153,7 @@ in the Windows backend has to cope with them.
 | `stt/sapi/` | Windows SAPI 5 in-process recognizer over raw COM vtables. |
 | `stt/fake/` | The tag parser plus stdin and script recognisers, for development and regression. |
 | `audio/radio/` | The radio chain: band pass, presence, soft clip, noise, squelch, dropouts, level, resample. |
+| `speaker/` | The radio, heard: voices per position and crew, one frequency, the queue, the gaps, the ATIS broadcast — the rules applications share. |
 | `audio/` | Per-frequency queues and playback events; `winmm` on Windows, `afplay` on macOS, WAV files elsewhere. |
 | `voices/` | Manifest, downloader, region-weighted voice assignment. |
 | `cmd/voicecheck` | Regression and audit CLI. |
@@ -320,7 +347,7 @@ Remove it, or drop the `replace`, before a release build. When the library
 settles:
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.4.0
+go get github.com/mrlm-net/voice-goio@v0.5.0
 ```
 
 ### What to wire first
@@ -357,6 +384,7 @@ first build.
 | `v0.2.0` | Recognition failure reasons (`TagReason`), session recording, emergency and deviation phraseology. |
 | `v0.3.0` | Departure clearance readbacks, WAV input for the Windows recogniser so the corpus runs unattended, and a fix for models downloading into the working directory. |
 | `v0.4.0` | Business Source License 1.1 (non-commercial; Apache-2.0 four years after each release). Taxiway letters after "via" are spelled. |
+| `v0.5.0` | `speaker`: the radio as applications speak it (voices per position and crew, one frequency, the queue, gaps, the ATIS broadcast). Female share in the voice pool; piper sentinel cut at its silence. |
 
 Versions describe what changed, not what is planned. SPEC.md §5 earmarked
 `v0.2.0` for the Windows bring-up; that number went to an earlier release

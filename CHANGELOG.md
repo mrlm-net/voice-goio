@@ -7,8 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-04
+
 ### Added
 
+- speaker: the radio, heard, as the simconnect airport map speaks it, for every application to share: `speaker.New`, `Set` (on/off and the one frequency followed), `Hear` an `Utterance`, `SetATIS` (or `Options.ATIS`) for the looping broadcast, `SayOnce`, `SetDevice`/`Devices`, `State`, `Clip`/`WAV` for a client playing on its own device. Voices per controller position with shifts and per crew, one call at a time with 1 to 5 s between, nothing said more than 60 s late, FAA or ICAO reading. The package doc lists the files that must sit beside the application (piper and the voice models) and what that means for packaging.
 - voices: `Speaker.Gender` ("F", "M" or "") and `PoolOptions.FemaleShare`. A position gets a voice of its gender (the share of positions that get a female one, e.g. 1/9 for 1:8), the best of that gender in its accent tier, and any voice when none is free. The genders come from the sources: VCTK's 109 speakers from the corpus's own speaker-info.txt (version 0.92, Edinburgh DataShare), which also gives each speaker's accent in place of the round-robin placeholders (63 female, 46 male); lessac (Blizzard 2013 corpus page), alba (DataShare abstract) and ryan (RyanSpeech paper); hfc_male, hfc_female, northern_english_male and southern_english_female by their names. alan and joe stay without one: their sources do not say.
 
 ## [0.4.0] — 2026-10-02
