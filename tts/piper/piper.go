@@ -202,7 +202,7 @@ func (t *TTS) Synthesize(ctx context.Context, p voicegoio.VoiceProfile, text str
 	if err != nil {
 		return nil, err
 	}
-	pcm, err := pr.speak(ctx, p, text, t.opt.Timeout, t.opt.IdleGap)
+	pcm, err := pr.speak(ctx, p, text, t.SampleRate(p), t.opt.Timeout, t.opt.IdleGap)
 	if err == nil {
 		return pcm, nil
 	}
@@ -216,7 +216,7 @@ func (t *TTS) Synthesize(ctx context.Context, p voicegoio.VoiceProfile, text str
 	if err2 != nil {
 		return nil, errors.Join(err, err2)
 	}
-	pcm, err2 = pr2.speak(ctx, p, text, t.opt.Timeout, t.opt.IdleGap)
+	pcm, err2 = pr2.speak(ctx, p, text, t.SampleRate(p), t.opt.Timeout, t.opt.IdleGap)
 	if err2 != nil {
 		return nil, fmt.Errorf("piper: %q failed twice: %w", p.Model, errors.Join(err, err2))
 	}
