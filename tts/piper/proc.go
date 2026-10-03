@@ -43,7 +43,7 @@ func start(opt Options, onnx, cfg string) (*proc, error) {
 		"--config", cfg,
 		"--output-raw",
 		"--json-input",
-		"--sentence_silence", "0",
+		"--sentence_silence", sentenceSilence,
 	}
 	args = append(args, opt.Args...)
 	cmd := exec.Command(opt.PiperPath, args...)
@@ -127,7 +127,7 @@ func line(v voicegoio.VoiceProfile, text string) jsonl.Line {
 }
 
 // speak synthesises one utterance.
-func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string, timeout, idleGap time.Duration) ([]int16, error) {
+func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string, rate int, timeout, idleGap time.Duration) ([]int16, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if !p.alive() {
@@ -154,6 +154,13 @@ func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string,
 	if err != nil {
 		return nil, err
 	}
+	// The text ends at the silence before the sentinel (--sentence_silence
+	// puts it there): its length varies from one synthesis to the next, so
+	// cutting the measured length took up to a few hundred ms of the text
+	// whenever it came out shorter (the last syllable of a call clipped).
+	if out, ok := beforeSentinel(raw, rate); ok {
+		return out, nil
+	}
 	if len(raw) <= sentinel {
 		// The sentinel never arrived: return what we have rather than nothing,
 		// and let the caller hear a slightly long transmission.
@@ -161,6 +168,39 @@ func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string,
 	}
 	out := raw[:len(raw)-sentinel]
 	return trimSilence(out), nil
+}
+
+// sentenceSilence is the silence piper puts after each sentence, so the
+// text and the sentinel are apart; sentinelGap is the least of it that
+// counts as that gap.
+const (
+	sentenceSilence = "0.2"
+	sentinelGap     = 120 * time.Millisecond
+)
+
+// beforeSentinel is raw up to the silence before the sentinel word: from
+// the end, past the sentinel's audio, the first run of silence of
+// sentinelGap or more. False when there is none (no sentinel heard).
+func beforeSentinel(raw []int16, rate int) ([]int16, bool) {
+	pcm := trimSilence(raw)
+	need := int(sentinelGap.Seconds() * float64(rate))
+	if rate <= 0 || need <= 0 {
+		return nil, false
+	}
+	run, heard := 0, false
+	for i := len(pcm) - 1; i >= 0; i-- {
+		if s := pcm[i]; s > silenceThreshold || s < -silenceThreshold {
+			run, heard = 0, true
+			continue
+		}
+		if run++; heard && run >= need {
+			if out := trimSilence(pcm[:i]); len(out) > 0 {
+				return out, true
+			}
+			return nil, false
+		}
+	}
+	return nil, false
 }
 
 // round writes the given lines and collects PCM until stdout has been quiet for
@@ -234,12 +274,15 @@ func toPCM(b []byte) []int16 {
 
 // trimSilence removes a silent tail, which is what is left after the sentinel
 // is cut and what --sentence_silence 0 does not quite eliminate.
+// silenceThreshold: quieter than this is silence (about -60 dBFS).
+const silenceThreshold = 32
+
 func trimSilence(pcm []int16) []int16 {
-	const threshold = 32 // about -60 dBFS
+
 	end := len(pcm)
 	for end > 0 {
 		v := pcm[end-1]
-		if v > threshold || v < -threshold {
+		if v > silenceThreshold || v < -silenceThreshold {
 			break
 		}
 		end--
