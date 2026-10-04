@@ -48,6 +48,8 @@ func main() {
 		err = cmdDevices(os.Args[2:])
 	case "voices":
 		err = cmdVoices(os.Args[2:])
+	case "pack":
+		err = cmdPack(os.Args[2:])
 	case "download":
 		err = cmdDownload(os.Args[2:])
 	case "-h", "--help", "help":
@@ -71,6 +73,7 @@ func usage() {
   devices   list audio input and output devices
   voices    report pool size, accent coverage and missing models
   download  fetch a model from the voice repository
+  pack      zip a voice pack (-pack en|all -out file.zip) of the installed models for an installer
 
 Run "voicecheck <command> -h" for the flags of each.
 `)
@@ -517,6 +520,42 @@ func cmdVoices(args []string) error {
 	return nil
 }
 
+// ---- pack ------------------------------------------------------------------
+
+func cmdPack(args []string) error {
+	fs := flag.NewFlagSet("pack", flag.ExitOnError)
+	var (
+		manifest = fs.String("voices", "", "manifest path")
+		dir      = fs.String("dir", "", "the installed models")
+		pack     = fs.String("pack", voices.PackAll, "en (English only) or all")
+		out      = fs.String("out", "", "the zip to write")
+	)
+	fs.Parse(args)
+	if *out == "" {
+		return fmt.Errorf("pack: -out is required")
+	}
+	pool, err := loadPool(*manifest, *dir, 7)
+	if err != nil {
+		return err
+	}
+	man := pool.Manifest()
+	models, err := man.Pack(*pack)
+	if err != nil {
+		return err
+	}
+	f, err := os.Create(*out)
+	if err != nil {
+		return err
+	}
+	if err := man.WritePack(f, models, pool.Dir()); err != nil {
+		f.Close()
+		os.Remove(*out)
+		return err
+	}
+	fmt.Println(*out+":", len(models), "models")
+	return f.Close()
+}
+
 // ---- download --------------------------------------------------------------
 
 func cmdDownload(args []string) error {
@@ -525,12 +564,13 @@ func cmdDownload(args []string) error {
 		manifest = fs.String("voices", "", "manifest path")
 		dir      = fs.String("dir", "", "destination directory")
 		model    = fs.String("model", "", "model name, or \"all\"")
+		pack     = fs.String("pack", "", "a voice pack: en (English only) or all")
 		base     = fs.String("base", voices.DefaultBaseURL, "base URL or LAN mirror")
 		write    = fs.String("write", "", "write the manifest back here with the hashes filled in")
 	)
 	fs.Parse(args)
-	if *model == "" {
-		return fmt.Errorf("download: -model is required (or -model all)")
+	if *model == "" && *pack == "" {
+		return fmt.Errorf("download: -model or -pack is required (-model all, -pack en)")
 	}
 	pool, err := loadPool(*manifest, *dir, 7)
 	if err != nil {
@@ -539,7 +579,11 @@ func cmdDownload(args []string) error {
 	man := pool.Manifest()
 
 	targets := man.Models
-	if *model != "all" {
+	if *pack != "" {
+		if targets, err = man.Pack(*pack); err != nil {
+			return err
+		}
+	} else if *model != "all" {
 		m, ok := man.Model(*model)
 		if !ok {
 			return fmt.Errorf("download: %q is not in the manifest", *model)
