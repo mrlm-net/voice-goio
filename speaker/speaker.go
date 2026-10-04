@@ -113,6 +113,9 @@ type Utterance struct {
 	// played on the intercom in order (Text and Voice ignored); a ChimeCall
 	// is followed by a pickup pause (PickupMin…+PickupJitter).
 	Chime Chime
+	// PA: said on the cabin PA (SayPA): its own queue and player, through
+	// the cabin speaker chain (PAChain); not tied to the frequency.
+	PA bool
 }
 
 // Options configures a Speaker.
@@ -154,8 +157,11 @@ type State struct {
 	Backend string `json:"backend,omitempty"`
 	// Device is the output picked ("" the system default), Devices those
 	// there are (known once the sound has been on).
-	Device  string             `json:"device"`
-	Devices []voicegoio.Device `json:"devices,omitempty"`
+	Device string `json:"device"`
+	// DeviceFor is each channel's own output (SetDeviceFor); a channel not
+	// in it plays on Device.
+	DeviceFor map[Channel]string `json:"deviceFor,omitempty"`
+	Devices   []voicegoio.Device `json:"devices,omitempty"`
 }
 
 // The pipeline behind the speaker, as small interfaces so the rules can be
@@ -236,12 +242,11 @@ type Speaker struct {
 	lastCS  string
 	shifts  map[string]*shift
 	rng     *rand.Rand
-	// The intercom: its own queue and player, untouched by Set.
-	icQueue  chan item
-	icPlayer player
-	// icChimeEnd: when the last chime (and its pickup) ended.
-	icChimeEnd time.Time
-	icLastEnd  time.Time
+	// The intercom and the cabin PA: each its own queue and player,
+	// untouched by Set, playing in order with itself, beside the radio.
+	ic, pa *lane
+	// devFor: a channel's own output (SetDeviceFor); none: the main one.
+	devFor map[Channel]string
 
 	openEngine func() (*engine, error)
 	newPlayer  func(device string) (player, []voicegoio.Device, error)
@@ -264,11 +269,13 @@ func newSpeaker(opt Options, t timing) *Speaker {
 	}
 	return &Speaker{
 		opt: opt, t: t, status: "off", device: opt.Device,
-		queue:   make(chan item, 64),
-		icQueue: make(chan item, 64),
-		atis:    map[string]atisInfo{},
-		rng:     rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x70ce)),
-		done:    make(chan struct{}),
+		queue:  make(chan item, 64),
+		ic:     newLane(ChannelIntercom, IntercomKey),
+		pa:     newLane(ChannelPA, PAKey),
+		devFor: map[Channel]string{},
+		atis:   map[string]atisInfo{},
+		rng:    rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x70ce)),
+		done:   make(chan struct{}),
 	}
 }
 
@@ -317,7 +324,7 @@ func (s *Speaker) open() error {
 		return err
 	}
 	if s.player == nil {
-		p, d, err := s.newPlayer(s.device)
+		p, d, err := s.newPlayer(s.deviceOf(ChannelRadio))
 		if err != nil {
 			return err
 		}
@@ -382,28 +389,73 @@ func (s *Speaker) Set(on bool, freq string) {
 func (s *Speaker) State() State {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return State{On: s.on, Frequency: s.freq, Status: s.status, Backend: s.backend, Device: s.device, Devices: append([]voicegoio.Device(nil), s.devices...)}
+	devFor := map[Channel]string{}
+	for ch, id := range s.devFor {
+		devFor[ch] = id
+	}
+	return State{On: s.on, Frequency: s.freq, Status: s.status, Backend: s.backend, Device: s.device, DeviceFor: devFor, Devices: append([]voicegoio.Device(nil), s.devices...)}
 }
 
 // Devices are the outputs there are (known once the sound has been on).
 func (s *Speaker) Devices() []voicegoio.Device { return s.State().Devices }
 
-// SetDevice plays on output id ("" the system default) from now on.
+// SetDevice plays on output id ("" the system default) from now on: every
+// channel without its own (SetDeviceFor).
 func (s *Speaker) SetDevice(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if id == s.device {
 		return nil
 	}
-	for _, p := range []player{s.player, s.icPlayer} {
-		if p != nil {
+	old := s.device
+	s.device = id
+	for _, ch := range []Channel{ChannelRadio, ChannelIntercom, ChannelPA} {
+		if s.devFor[ch] != "" {
+			continue
+		}
+		if p := s.playerOf(ch); p != nil {
 			if err := p.SetDevice(id); err != nil {
+				s.device = old
 				return err
 			}
 		}
 	}
-	s.device = id
 	return nil
+}
+
+// SetDeviceFor plays channel ch on output id from now on; "" follows the
+// main device (SetDevice) again.
+func (s *Speaker) SetDeviceFor(ch Channel, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if id == "" {
+		delete(s.devFor, ch)
+	} else {
+		s.devFor[ch] = id
+	}
+	if p := s.playerOf(ch); p != nil {
+		return p.SetDevice(s.deviceOf(ch))
+	}
+	return nil
+}
+
+// deviceOf is the output channel ch plays on; s.mu held.
+func (s *Speaker) deviceOf(ch Channel) string {
+	if id := s.devFor[ch]; id != "" {
+		return id
+	}
+	return s.device
+}
+
+// playerOf is channel ch's player, nil before it is open; s.mu held.
+func (s *Speaker) playerOf(ch Channel) player {
+	switch ch {
+	case ChannelIntercom:
+		return s.ic.player
+	case ChannelPA:
+		return s.pa.player
+	}
+	return s.player
 }
 
 // Hear takes an utterance from the radio: queued if the speaker is on and
@@ -411,8 +463,12 @@ func (s *Speaker) SetDevice(id string) error {
 // utterance is queued on the intercom whatever the speaker's state. It never
 // blocks; a full queue drops it.
 func (s *Speaker) Hear(u Utterance) {
+	if u.PA {
+		s.pa.queueItem(u)
+		return
+	}
 	if u.Intercom {
-		s.queueIntercom(u)
+		s.ic.queueItem(u)
 		return
 	}
 	s.mu.Lock()
@@ -432,8 +488,11 @@ func (s *Speaker) Hear(u Utterance) {
 // (State().Status says why). An Intercom utterance is queued on the
 // intercom, as SayIntercom.
 func (s *Speaker) SayOnce(u Utterance) bool {
+	if u.PA {
+		return s.onLane(s.pa, u)
+	}
 	if u.Intercom {
-		return s.intercom(u)
+		return s.onLane(s.ic, u)
 	}
 	s.mu.Lock()
 	if !s.on {
@@ -457,50 +516,92 @@ func (s *Speaker) SayOnce(u Utterance) bool {
 // is off. Queued behind what the intercom is saying; false when the voice is
 // unavailable (State().Status says why while the radio is off; logged).
 func (s *Speaker) SayIntercom(text string, voice voicegoio.VoiceProfile) bool {
-	return s.intercom(Utterance{Intercom: true, Text: text, Voice: &voice})
+	return s.onLane(s.ic, Utterance{Intercom: true, Text: text, Voice: &voice})
 }
 
-// Chime queues c on the intercom, in order with what is said there (a
-// call before an exchange, a ding before a PA); false when the intercom
+// SayPA says text on the cabin PA in voice, through the cabin speaker
+// chain (PAChain): its own queue and player, in order with itself and
+// beside the intercom, so a PA and an intercom call overlap as in an
+// aircraft.
+func (s *Speaker) SayPA(text string, voice voicegoio.VoiceProfile) bool {
+	return s.onLane(s.pa, Utterance{PA: true, Text: text, Voice: &voice})
+}
+
+// Chime queues c in order with what is said where it belongs: ChimePA on
+// the PA, the call and the seat-belt chime on the intercom; false when it
 // cannot play (no output device) or c is unknown.
 func (s *Speaker) Chime(c Chime) bool {
 	if ChimePCM(c) == nil {
 		return false
 	}
-	return s.intercom(Utterance{Intercom: true, Chime: c})
+	if c == ChimePA {
+		return s.onLane(s.pa, Utterance{PA: true, Chime: c})
+	}
+	return s.onLane(s.ic, Utterance{Intercom: true, Chime: c})
 }
 
-// intercom opens the voice and queues u on the intercom.
-func (s *Speaker) intercom(u Utterance) bool {
-	u.Intercom = true
+// Channel is where a speaker plays: the radio, the intercom (cockpit and
+// cabin calls) or the cabin PA, each on its own output if set
+// (SetDeviceFor).
+type Channel string
+
+const (
+	ChannelRadio    Channel = "radio"
+	ChannelIntercom Channel = "intercom"
+	ChannelPA       Channel = "pa"
+)
+
+// PAKey is the player queue of the cabin PA.
+const PAKey = "pa"
+
+// lane is the intercom or the PA: a queue said one at a time on its own
+// player.
+type lane struct {
+	ch    Channel
+	key   string
+	queue chan item
+	// guarded by Speaker.mu:
+	player   player
+	lastEnd  time.Time
+	chimeEnd time.Time // when the last chime (and its pickup) ended
+}
+
+func newLane(ch Channel, key string) *lane {
+	return &lane{ch: ch, key: key, queue: make(chan item, 64)}
+}
+
+// onLane opens the voice (unless u is a chime) and l's player, and queues
+// u on l.
+func (s *Speaker) onLane(l *lane, u Utterance) bool {
+	u.Intercom, u.PA = l.ch == ChannelIntercom, l.ch == ChannelPA
 	s.mu.Lock()
-	err := s.openIntercomLocked(u.Chime == "")
+	err := s.openLaneLocked(l, u.Chime == "")
 	if err != nil {
 		if !s.on {
 			s.status = err.Error()
 		}
 		s.mu.Unlock()
-		s.opt.Logf("voice: intercom: %v", err)
+		s.opt.Logf("voice: %s: %v", l.ch, err)
 		return false
 	}
 	s.mu.Unlock()
-	return s.queueIntercom(u)
+	return l.queueItem(u)
 }
 
-// queueIntercom queues u on the intercom without blocking; false when the
-// queue is full (u is dropped).
-func (s *Speaker) queueIntercom(u Utterance) bool {
+// queueItem queues u on l without blocking; false when the queue is full
+// (u is dropped).
+func (l *lane) queueItem(u Utterance) bool {
 	select {
-	case s.icQueue <- item{u, time.Now()}:
+	case l.queue <- item{u, time.Now()}:
 		return true
 	default: // behind: drop it
 		return false
 	}
 }
 
-// openIntercomLocked opens the voices (when voice: a chime needs none) and
-// the intercom's player; s.mu held.
-func (s *Speaker) openIntercomLocked(voice bool) error {
+// openLaneLocked opens the voices (when voice: a chime needs none) and l's
+// player; s.mu held.
+func (s *Speaker) openLaneLocked(l *lane, voice bool) error {
 	select {
 	case <-s.done:
 		return voicegoio.ErrClosed
@@ -511,65 +612,68 @@ func (s *Speaker) openIntercomLocked(voice bool) error {
 			return err
 		}
 	}
-	if s.icPlayer == nil {
-		p, d, err := s.newPlayer(s.device)
+	if l.player == nil {
+		p, d, err := s.newPlayer(s.deviceOf(l.ch))
 		if err != nil {
 			return err
 		}
 		if d != nil {
 			s.devices = d
 		}
-		s.icPlayer = p
+		l.player = p
 	}
 	return nil
 }
 
-// runIntercom says what is queued on the intercom, one at a time.
-func (s *Speaker) runIntercom() {
+// runLane says what is queued on l, one at a time.
+func (s *Speaker) runLane(l *lane) {
 	for {
 		select {
 		case <-s.done:
 			return
-		case it := <-s.icQueue:
+		case it := <-l.queue:
 			// Behind a chime, late from its end (with the pickup): the
 			// answer to a call is not stale for having waited for it.
 			from := it.when
 			s.mu.Lock()
-			if s.icChimeEnd.After(from) {
-				from = s.icChimeEnd
+			if l.chimeEnd.After(from) {
+				from = l.chimeEnd
 			}
 			s.mu.Unlock()
 			if time.Since(from) > s.t.maxLag {
 				continue
 			}
-			s.sayIntercom(it.u)
+			s.sayOnLane(l, it.u)
 		}
 	}
 }
 
-// sayIntercom synthesises u in its voice, without the radio chain, and waits
-// while it is played on the intercom.
-func (s *Speaker) sayIntercom(u Utterance) {
+// sayOnLane synthesises u in its voice, without the radio chain (the PA
+// through the cabin speaker's), and waits while it is played on l.
+func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 	s.mu.Lock()
-	err := s.openIntercomLocked(u.Chime == "")
-	e, p, next := s.eng, s.icPlayer, s.icLastEnd.Add(s.t.icGap)
+	err := s.openLaneLocked(l, u.Chime == "")
+	e, p, next := s.eng, l.player, l.lastEnd.Add(s.t.icGap)
 	s.mu.Unlock()
 	if err != nil {
-		s.opt.Logf("voice: intercom: %v", err)
+		s.opt.Logf("voice: %s: %v", l.ch, err)
 		return
 	}
 	if u.Chime != "" {
-		s.playChime(u, p, next)
+		s.playChime(l, u, p, next)
 		return
 	}
 	voice := s.voiceOf(e, u)
 	ph := phraseology(u.Phraseology)
 	pcm, err := e.tts.Synthesize(context.Background(), voice, SpokenEnd(e.norm.Spoken(u.Text, ph)))
 	if err != nil {
-		s.opt.Logf("voice: intercom: %v", err)
+		s.opt.Logf("voice: %s: %v", l.ch, err)
 		return
 	}
 	rate := e.tts.SampleRate(voice)
+	if u.PA {
+		pcm = PAChain(pcm, rate)
+	}
 	out := Pad(pcm, rate) // the player converts the rate
 	if !s.sleep(time.Until(next)) {
 		return
@@ -577,12 +681,12 @@ func (s *Speaker) sayIntercom(u Utterance) {
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
-	if err := p.Play(voicegoio.Transmission{Frequency: IntercomKey, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, rate); err != nil {
+	if err := p.Play(voicegoio.Transmission{Frequency: l.key, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, rate); err != nil {
 		return // closed meanwhile
 	}
 	said := samplesDuration(len(out), rate)
 	s.mu.Lock()
-	s.icLastEnd = time.Now().Add(said)
+	l.lastEnd = time.Now().Add(said)
 	s.mu.Unlock()
 	s.sleep(said)
 }
@@ -643,9 +747,11 @@ func (s *Speaker) Close() error {
 		s.player.Close()
 		s.player = nil
 	}
-	if s.icPlayer != nil {
-		s.icPlayer.Close()
-		s.icPlayer = nil
+	for _, l := range []*lane{s.ic, s.pa} {
+		if l.player != nil {
+			l.player.Close()
+			l.player = nil
+		}
 	}
 	if s.eng != nil {
 		s.eng.tts.Close()
@@ -658,7 +764,8 @@ func (s *Speaker) Close() error {
 // nothing else is to be said, it says the ATIS again and again. The intercom
 // runs beside it.
 func (s *Speaker) run() {
-	go s.runIntercom()
+	go s.runLane(s.ic)
+	go s.runLane(s.pa)
 	for {
 		select {
 		case <-s.done:
@@ -844,6 +951,9 @@ func (s *Speaker) Clip(u Utterance) (pcm []int16, rate int, err error) {
 		return nil, 0, err
 	}
 	rate = e.tts.SampleRate(voice)
+	if u.PA {
+		return PAChain(raw, rate), rate, nil
+	}
 	if u.Intercom {
 		return raw, rate, nil
 	}
@@ -929,7 +1039,7 @@ func samplesDuration(n, rate int) time.Duration {
 
 // playChime plays chime u on the intercom player p from next on; after a
 // call, the next item waits for the one called to pick up.
-func (s *Speaker) playChime(u Utterance, p player, next time.Time) {
+func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time) {
 	pcm := ChimePCM(u.Chime)
 	if !s.sleep(time.Until(next)) {
 		return
@@ -937,7 +1047,7 @@ func (s *Speaker) playChime(u Utterance, p player, next time.Time) {
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
-	if err := p.Play(voicegoio.Transmission{Frequency: IntercomKey, ControllerID: "chime", Text: string(u.Chime)}, pcm, ChimeRate); err != nil {
+	if err := p.Play(voicegoio.Transmission{Frequency: l.key, ControllerID: "chime", Text: string(u.Chime)}, pcm, ChimeRate); err != nil {
 		return
 	}
 	said := samplesDuration(len(pcm), ChimeRate)
@@ -950,8 +1060,8 @@ func (s *Speaker) playChime(u Utterance, p player, next time.Time) {
 		s.mu.Unlock()
 	}
 	s.mu.Lock()
-	s.icLastEnd = time.Now().Add(said - s.t.icGap)
-	s.icChimeEnd = s.icLastEnd
+	l.lastEnd = time.Now().Add(said - s.t.icGap)
+	l.chimeEnd = l.lastEnd
 	s.mu.Unlock()
 	s.sleep(said - s.t.icGap)
 }
