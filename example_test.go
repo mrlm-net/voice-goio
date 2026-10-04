@@ -15,8 +15,11 @@ import (
 	voicegoio "github.com/mrlm-net/voice-goio"
 	"github.com/mrlm-net/voice-goio/audio"
 	"github.com/mrlm-net/voice-goio/audio/radio"
+	"github.com/mrlm-net/voice-goio/grammar"
 	"github.com/mrlm-net/voice-goio/normalise"
+	"github.com/mrlm-net/voice-goio/speaker"
 	"github.com/mrlm-net/voice-goio/stt/fake"
+	"github.com/mrlm-net/voice-goio/stt/sapi"
 	"github.com/mrlm-net/voice-goio/tts"
 	"github.com/mrlm-net/voice-goio/voices"
 )
@@ -132,4 +135,55 @@ func Example_devices() {
 			log.Fatal(err)
 		}
 	}
+}
+
+// Example_intercom is the crew on the intercom, each in the voice the player
+// chose: no radio chain, whatever frequency is followed, even with the radio
+// off.
+func Example_intercom() {
+	man, err := voices.LoadDefault()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// A voice picker lists what is installed in the per-user folder.
+	installed := voices.Installed(man, voices.Dir())
+	if len(installed) == 0 {
+		log.Fatalf("no voices in %s", voices.Dir())
+	}
+	copilot := installed[0].Profile(0)
+
+	sp := speaker.New(speaker.Options{})
+	defer sp.Close()
+	sp.SayIntercom("Before start checklist complete", copilot)
+
+	// The same as an Utterance; Voice also picks the voice of a radio call.
+	sp.Hear(speaker.Utterance{Intercom: true, Position: "purser", Text: "Cabin secure", Voice: &copilot})
+}
+
+// Example_commands listens for the application's own phrases instead of the
+// ATC grammar.
+func Example_commands() {
+	cmds := []grammar.Command{
+		{Intent: "request_taxi", Phrases: []string{"request taxi"}},
+		{Intent: "gear_up", Phrases: []string{"gear up", "landing gear up"}},
+		{Intent: "doors_closed", Phrases: []string{"doors closed"}},
+	}
+	g, err := grammar.Commands(cmds)
+	if err != nil {
+		log.Fatal(err)
+	}
+	rec, err := sapi.New(sapi.Options{Grammar: g}) // Windows
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rec.Close()
+	rec.Start() // push to talk pressed
+	rec.Stop()  // released
+
+	got := <-rec.Results()                     // exactly one result per cycle
+	fmt.Println(got.Tags[voicegoio.TagIntent]) // "gear_up", or say_again
+
+	// Typed, or away from Windows: the same phrases, no engine.
+	intent, ok := grammar.Match(cmds, "Gear up!")
+	fmt.Println(intent, ok)
 }

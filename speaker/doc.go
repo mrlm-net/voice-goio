@@ -61,6 +61,25 @@
 // Options.ATIS) and the speaker broadcasts it while its frequency is
 // followed. SayOnce says one now, even while off.
 //
+// # The intercom and chosen voices
+//
+// The crew and the cabin speak on the intercom, not the radio:
+//
+//	man, _ := voices.LoadDefault()
+//	installed := voices.Installed(man, voices.Dir()) // a voice picker's list
+//	copilot := installed[0].Profile(0)               // model + speaker the player chose
+//	sp.SayIntercom("Before start checklist complete", copilot)
+//	sp.Hear(speaker.Utterance{Intercom: true, Position: "purser", Text: "Cabin secure", Voice: &purser})
+//
+// An Intercom utterance is said without the radio chain (no band-pass,
+// noise or squelch) and is not tied to the frequency: Hear queues it while
+// the radio is off, on another frequency or none, and a change of frequency
+// does not drop it. The intercom has its own player queue (IntercomKey) on
+// the same output device, one utterance at a time with IntercomGap between,
+// MaxLag as on the radio; it is heard beside the radio, not after it. The
+// pool's rules (shifts, FemaleShare, ExcludedVoice) do not apply to a voice
+// given in Utterance.Voice, which wins on the radio as well.
+//
 // # What must be beside the application
 //
 // Piper: PiperPath, by default bin/piper/piper.exe next to the running

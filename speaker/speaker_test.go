@@ -18,15 +18,22 @@ import (
 const fakeRate = 1000
 
 type fakeTTS struct {
-	mu    sync.Mutex
-	texts []string
+	mu     sync.Mutex
+	texts  []string
+	voices []voicegoio.VoiceProfile
 }
 
-func (f *fakeTTS) Synthesize(_ context.Context, _ voicegoio.VoiceProfile, text string) ([]int16, error) {
+func (f *fakeTTS) Synthesize(_ context.Context, v voicegoio.VoiceProfile, text string) ([]int16, error) {
 	f.mu.Lock()
 	f.texts = append(f.texts, text)
+	f.voices = append(f.voices, v)
 	f.mu.Unlock()
 	return make([]int16, len(text)), nil
+}
+func (f *fakeTTS) voicesUsed() []voicegoio.VoiceProfile {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return append([]voicegoio.VoiceProfile(nil), f.voices...)
 }
 func (f *fakeTTS) SampleRate(voicegoio.VoiceProfile) int { return fakeRate }
 func (f *fakeTTS) Close() error                          { return nil }
@@ -42,9 +49,24 @@ func (fakePool) Assign(key string, kind voicegoio.ControllerKind) voicegoio.Voic
 	return voicegoio.VoiceProfile{Model: key, Radio: string(kind)}
 }
 
-type passChain struct{}
+// passChain passes the audio through and counts the calls it was put
+// through the radio.
+type passChain struct {
+	mu sync.Mutex
+	n  int
+}
 
-func (passChain) Apply(pcm []int16, _ int, _ string, _ int, _ int64) []int16 { return pcm }
+func (c *passChain) Apply(pcm []int16, _ int, _ string, _ int, _ int64) []int16 {
+	c.mu.Lock()
+	c.n++
+	c.mu.Unlock()
+	return pcm
+}
+func (c *passChain) applied() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.n
+}
 
 type plainReader struct{}
 
@@ -56,6 +78,7 @@ func (plainReader) Spoken(text string, ph voicegoio.Phraseology) string {
 }
 
 type play struct {
+	queue     string
 	who, text string
 	samples   int
 	at        time.Time
@@ -74,7 +97,7 @@ func (p *fakePlayer) Play(t voicegoio.Transmission, pcm []int16, _ int) error {
 	if p.closed {
 		return voicegoio.ErrClosed
 	}
-	p.plays = append(p.plays, play{t.ControllerID, t.Text, len(pcm), time.Now()})
+	p.plays = append(p.plays, play{t.Frequency, t.ControllerID, t.Text, len(pcm), time.Now()})
 	return nil
 }
 func (p *fakePlayer) SampleRate() int { return fakeRate }
@@ -99,6 +122,7 @@ func (p *fakePlayer) got() []play {
 type rig struct {
 	s       *Speaker
 	tts     *fakeTTS
+	chain   *passChain
 	mu      sync.Mutex
 	players []*fakePlayer
 }
@@ -112,15 +136,15 @@ func (r *rig) player(i int) *fakePlayer {
 	return r.players[i]
 }
 
-var fast = timing{maxLag: time.Second, gap: 20 * time.Millisecond, jitter: 0, atisGap: 100 * time.Millisecond, tick: 5 * time.Millisecond}
+var fast = timing{maxLag: time.Second, gap: 20 * time.Millisecond, jitter: 0, atisGap: 100 * time.Millisecond, tick: 5 * time.Millisecond, icGap: 20 * time.Millisecond}
 
 func newRig(t *testing.T, tm timing, opt Options) *rig {
 	t.Helper()
-	r := &rig{tts: &fakeTTS{}}
+	r := &rig{tts: &fakeTTS{}, chain: &passChain{}}
 	opt.Logf = t.Logf
 	s := newSpeaker(opt, tm)
 	s.openEngine = func() (*engine, error) {
-		return &engine{tts: r.tts, backend: "fake", pool: fakePool{}, chain: passChain{}, norm: plainReader{}}, nil
+		return &engine{tts: r.tts, backend: "fake", pool: fakePool{}, chain: r.chain, norm: plainReader{}}, nil
 	}
 	s.newPlayer = func(device string) (player, []voicegoio.Device, error) {
 		p := &fakePlayer{device: device}

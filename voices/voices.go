@@ -195,7 +195,7 @@ func (p *Pool) installed(model string) bool {
 	p.haveOnce.Do(func() {
 		p.have = map[string]bool{}
 		for _, m := range p.man.Models {
-			if _, err := os.Stat(filepath.Join(p.opt.Dir, filepath.FromSlash(m.ONNX))); err == nil {
+			if isInstalled(p.opt.Dir, m) {
 				p.have[m.Name] = true
 			}
 		}

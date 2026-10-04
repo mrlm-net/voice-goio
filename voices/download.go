@@ -204,7 +204,7 @@ func (p *progressWriter) Write(b []byte) (int, error) {
 func (p *Pool) Missing() []string {
 	var out []string
 	for _, m := range p.man.Models {
-		if _, err := os.Stat(filepath.Join(p.opt.Dir, filepath.FromSlash(m.ONNX))); err != nil {
+		if !isInstalled(p.opt.Dir, m) {
 			out = append(out, m.Name)
 		}
 	}

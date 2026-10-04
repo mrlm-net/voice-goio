@@ -7,6 +7,13 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Added
+
+- speaker: the intercom (#11). `Utterance.Intercom` and `Speaker.SayIntercom(text, voice)`: the crew and the cabin speak without the radio chain (no band-pass, noise or squelch) and whatever the frequency followed, even with the radio off, on their own player queue (`IntercomKey`) one at a time with `IntercomGap` between; a change of frequency does not drop them. `Clip` of an intercom utterance is dry.
+- speaker: `Utterance.Voice`, an explicit voice (model + speaker) that wins over the pool's pick, on the intercom and on the radio; its `Radio` left empty is the position's.
+- voices: `Dir()`, the per-user models folder (`%LOCALAPPDATA%\voice-goio\voices` on Windows), `Installed(manifest, dir)`, the manifest's models present there, and `Model.Profile(speakerID)`, one of their voices as a `VoiceProfile`.
+- grammar: `Commands`, an application's own SRGS grammar from phrases and intents ("gear up" → `gear_up`), and `Match`, the same matching for typed input; stt/sapi: `Options.Grammar` takes the grammar as text (`GrammarPath` still takes a file).
+
 ## [0.5.0] — 2026-10-04
 
 ### Added

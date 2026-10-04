@@ -211,8 +211,8 @@ func (r *Recognizer) selectAudioInput() error {
 	return r.rec.call("ISpRecognizer::SetInput", recSetInput, obj(chosen), 1)
 }
 
-// loadGrammar compiles atc.grxml. SAPI compiles SRGS XML only from a file, so
-// the embedded grammar is written to a temporary file first.
+// loadGrammar compiles GrammarPath, else Grammar or atc.grxml. SAPI compiles
+// SRGS XML only from a file, so the text is written to a temporary file first.
 func (r *Recognizer) loadGrammar() error {
 	var g comObject
 	if err := r.ctx.call("ISpRecoContext::CreateGrammar", ctxCreateGrammar, 1, 0, up(&g)); err != nil {
@@ -226,7 +226,11 @@ func (r *Recognizer) loadGrammar() error {
 		if err != nil {
 			return fmt.Errorf("sapi: write grammar: %w", err)
 		}
-		if _, err := f.WriteString(grammar.ATC); err != nil {
+		text := r.opt.Grammar
+		if text == "" {
+			text = grammar.ATC
+		}
+		if _, err := f.WriteString(text); err != nil {
 			f.Close()
 			return fmt.Errorf("sapi: write grammar: %w", err)
 		}
