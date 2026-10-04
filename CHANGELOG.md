@@ -7,6 +7,8 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-04
+
 ### Added
 
 - speaker: the intercom (#11). `Utterance.Intercom` and `Speaker.SayIntercom(text, voice)`: the crew and the cabin speak without the radio chain (no band-pass, noise or squelch) and whatever the frequency followed, even with the radio off, on their own player queue (`IntercomKey`) one at a time with `IntercomGap` between; a change of frequency does not drop them. `Clip` of an intercom utterance is dry.
