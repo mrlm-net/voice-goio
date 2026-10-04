@@ -6,7 +6,9 @@
 // The rules:
 //
 //   - Voices: piper (tts.Open) with the default voice pool (voices.json),
-//     never ExcludedVoice (the Czech model reading English), FemaleShare of
+//     the airport's accent first (at a Czech airport the Czech voice, RP
+//     phonemes: a light accent, the words as every English voice says
+//     them), Options.Exclude never, FemaleShare of
 //     the positions with a female voice, the radio.Default chain and
 //     normalise. A voice per controller position at an airport, handed over
 //     every ShiftMin to ShiftMax (a new controller, a new voice: "LKPR",
@@ -77,7 +79,7 @@
 // does not drop it. The intercom has its own player queue (IntercomKey) on
 // the same output device, one utterance at a time with IntercomGap between,
 // MaxLag as on the radio; it is heard beside the radio, not after it. The
-// pool's rules (shifts, FemaleShare, ExcludedVoice) do not apply to a voice
+// pool's rules (shifts, FemaleShare, Options.Exclude) do not apply to a voice
 // given in Utterance.Voice, which wins on the radio as well.
 //
 // # What must be beside the application
