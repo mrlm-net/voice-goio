@@ -7,6 +7,13 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-10-04
+
+### Added
+
+- voices: `InstallPack(ctx, pack, dir, progress)` downloads a pack's models, each checked against its SHA-256, resuming and skipping what is installed and valid; `Manifest.PackSize(pack)` its download size (core 714 MB, en 1031 MB, all 1542 MB); the manifest records every model's SHA-256 and `size`.
+- tts/piper: `Install(ctx, dir, progress)` downloads piper 2023.11.14-2 for Windows (rhasspy/piper, MIT), checks its pinned SHA-256 and unzips it to dir/piper — the layout the speaker defaults to.
+
 ## [0.10.0] — 2026-10-04
 
 ### Added
