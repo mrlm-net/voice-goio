@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.11.2] — 2026-10-04
+
+### Added
+
+- speaker: cabin chimes on the intercom, generated in code with no files. `Chime(ChimeCall | ChimePA | ChimeSeatbelt)` queues one in order with `SayIntercom`. `ChimeCall` is the two-tone call, `ChimePA` a single soft ding before a PA, `ChimeSeatbelt` the seat-belt bong. After a call chime the next intercom item waits a pickup (`PickupMin` + up to `PickupJitter`, 1.5–3 s). `Utterance.Chime` queues a chime the same way, `Clip` renders one, and `ChimePCM` / `ChimeRate` export the sound. A chime needs no voice model.
+
 ## [0.11.1] — 2026-10-04
 
 ### Fixed

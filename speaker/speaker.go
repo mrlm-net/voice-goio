@@ -109,6 +109,10 @@ type Utterance struct {
 	// it. It plays on its own player queue (IntercomKey), one at a time with
 	// IntercomGap between, beside the radio. Frequency is ignored.
 	Intercom bool
+	// Chime, when set, makes it that chime (ChimePCM) instead of speech:
+	// played on the intercom in order (Text and Voice ignored); a ChimeCall
+	// is followed by a pickup pause (PickupMin…+PickupJitter).
+	Chime Chime
 }
 
 // Options configures a Speaker.
@@ -190,6 +194,7 @@ type engine struct {
 // timing holds the constants above; tests shorten them.
 type timing struct {
 	maxLag, gap, jitter, atisGap, tick, icGap time.Duration
+	pickup, pickupJitter                      time.Duration // after a ChimeCall
 }
 
 type item struct {
@@ -232,9 +237,11 @@ type Speaker struct {
 	shifts  map[string]*shift
 	rng     *rand.Rand
 	// The intercom: its own queue and player, untouched by Set.
-	icQueue   chan item
-	icPlayer  player
-	icLastEnd time.Time
+	icQueue  chan item
+	icPlayer player
+	// icChimeEnd: when the last chime (and its pickup) ended.
+	icChimeEnd time.Time
+	icLastEnd  time.Time
 
 	openEngine func() (*engine, error)
 	newPlayer  func(device string) (player, []voicegoio.Device, error)
@@ -244,7 +251,7 @@ type Speaker struct {
 
 // New makes a speaker, off; nothing is opened until it is turned on.
 func New(opt Options) *Speaker {
-	s := newSpeaker(opt, timing{maxLag: MaxLag, gap: Gap, jitter: GapJitter, atisGap: ATISGap, tick: Tick, icGap: IntercomGap})
+	s := newSpeaker(opt, timing{maxLag: MaxLag, gap: Gap, jitter: GapJitter, atisGap: ATISGap, tick: Tick, icGap: IntercomGap, pickup: PickupMin, pickupJitter: PickupJitter})
 	s.openEngine = func() (*engine, error) { return openPiper(s.opt) }
 	s.newPlayer = openPlayer
 	go s.run()
@@ -453,11 +460,21 @@ func (s *Speaker) SayIntercom(text string, voice voicegoio.VoiceProfile) bool {
 	return s.intercom(Utterance{Intercom: true, Text: text, Voice: &voice})
 }
 
+// Chime queues c on the intercom, in order with what is said there (a
+// call before an exchange, a ding before a PA); false when the intercom
+// cannot play (no output device) or c is unknown.
+func (s *Speaker) Chime(c Chime) bool {
+	if ChimePCM(c) == nil {
+		return false
+	}
+	return s.intercom(Utterance{Intercom: true, Chime: c})
+}
+
 // intercom opens the voice and queues u on the intercom.
 func (s *Speaker) intercom(u Utterance) bool {
 	u.Intercom = true
 	s.mu.Lock()
-	err := s.openIntercomLocked()
+	err := s.openIntercomLocked(u.Chime == "")
 	if err != nil {
 		if !s.on {
 			s.status = err.Error()
@@ -481,15 +498,18 @@ func (s *Speaker) queueIntercom(u Utterance) bool {
 	}
 }
 
-// openIntercomLocked opens the voices and the intercom's player; s.mu held.
-func (s *Speaker) openIntercomLocked() error {
+// openIntercomLocked opens the voices (when voice: a chime needs none) and
+// the intercom's player; s.mu held.
+func (s *Speaker) openIntercomLocked(voice bool) error {
 	select {
 	case <-s.done:
 		return voicegoio.ErrClosed
 	default:
 	}
-	if err := s.openEngineLocked(); err != nil {
-		return err
+	if voice {
+		if err := s.openEngineLocked(); err != nil {
+			return err
+		}
 	}
 	if s.icPlayer == nil {
 		p, d, err := s.newPlayer(s.device)
@@ -511,7 +531,15 @@ func (s *Speaker) runIntercom() {
 		case <-s.done:
 			return
 		case it := <-s.icQueue:
-			if time.Since(it.when) > s.t.maxLag {
+			// Behind a chime, late from its end (with the pickup): the
+			// answer to a call is not stale for having waited for it.
+			from := it.when
+			s.mu.Lock()
+			if s.icChimeEnd.After(from) {
+				from = s.icChimeEnd
+			}
+			s.mu.Unlock()
+			if time.Since(from) > s.t.maxLag {
 				continue
 			}
 			s.sayIntercom(it.u)
@@ -523,11 +551,15 @@ func (s *Speaker) runIntercom() {
 // while it is played on the intercom.
 func (s *Speaker) sayIntercom(u Utterance) {
 	s.mu.Lock()
-	err := s.openIntercomLocked()
+	err := s.openIntercomLocked(u.Chime == "")
 	e, p, next := s.eng, s.icPlayer, s.icLastEnd.Add(s.t.icGap)
 	s.mu.Unlock()
 	if err != nil {
 		s.opt.Logf("voice: intercom: %v", err)
+		return
+	}
+	if u.Chime != "" {
+		s.playChime(u, p, next)
 		return
 	}
 	voice := s.voiceOf(e, u)
@@ -788,6 +820,12 @@ func (s *Speaker) say(u Utterance, force bool) {
 // utterances (PosATIS) are in the airport's ATIS voice unless u.Voice says
 // otherwise; Intercom utterances come without the radio chain.
 func (s *Speaker) Clip(u Utterance) (pcm []int16, rate int, err error) {
+	if u.Chime != "" {
+		if pcm := ChimePCM(u.Chime); pcm != nil {
+			return pcm, ChimeRate, nil
+		}
+		return nil, 0, fmt.Errorf("speaker: unknown chime %q", u.Chime)
+	}
 	s.mu.Lock()
 	err = s.openEngineLocked()
 	e := s.eng
@@ -887,4 +925,33 @@ func Pad(pcm []int16, rate int) []int16 {
 
 func samplesDuration(n, rate int) time.Duration {
 	return time.Duration(float64(n) / float64(rate) * float64(time.Second))
+}
+
+// playChime plays chime u on the intercom player p from next on; after a
+// call, the next item waits for the one called to pick up.
+func (s *Speaker) playChime(u Utterance, p player, next time.Time) {
+	pcm := ChimePCM(u.Chime)
+	if !s.sleep(time.Until(next)) {
+		return
+	}
+	if s.opt.OnSay != nil {
+		s.opt.OnSay(u)
+	}
+	if err := p.Play(voicegoio.Transmission{Frequency: IntercomKey, ControllerID: "chime", Text: string(u.Chime)}, pcm, ChimeRate); err != nil {
+		return
+	}
+	said := samplesDuration(len(pcm), ChimeRate)
+	if u.Chime == ChimeCall {
+		s.mu.Lock()
+		said += s.t.pickup
+		if s.t.pickupJitter > 0 {
+			said += time.Duration(s.rng.Int64N(int64(s.t.pickupJitter)))
+		}
+		s.mu.Unlock()
+	}
+	s.mu.Lock()
+	s.icLastEnd = time.Now().Add(said - s.t.icGap)
+	s.icChimeEnd = s.icLastEnd
+	s.mu.Unlock()
+	s.sleep(said - s.t.icGap)
 }

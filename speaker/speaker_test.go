@@ -136,7 +136,7 @@ func (r *rig) player(i int) *fakePlayer {
 	return r.players[i]
 }
 
-var fast = timing{maxLag: time.Second, gap: 20 * time.Millisecond, jitter: 0, atisGap: 100 * time.Millisecond, tick: 5 * time.Millisecond, icGap: 20 * time.Millisecond}
+var fast = timing{maxLag: time.Second, gap: 20 * time.Millisecond, jitter: 0, atisGap: 100 * time.Millisecond, tick: 5 * time.Millisecond, icGap: 20 * time.Millisecond, pickup: 300 * time.Millisecond}
 
 func newRig(t *testing.T, tm timing, opt Options) *rig {
 	t.Helper()
