@@ -55,3 +55,17 @@ func TestPacks(t *testing.T) {
 		t.Error("a pack with a model not installed")
 	}
 }
+
+// TestAccentModels: the models with an espeak override, none English.
+func TestAccentModels(t *testing.T) {
+	m, _ := LoadDefault()
+	acc := AccentModels(m)
+	if len(acc) < 7 {
+		t.Fatalf("accent models %v", acc)
+	}
+	for _, a := range acc {
+		if strings.HasPrefix(a, "en_") {
+			t.Errorf("%s is English", a)
+		}
+	}
+}

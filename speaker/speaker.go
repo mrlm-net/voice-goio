@@ -126,6 +126,11 @@ type Options struct {
 	// Exclude lists voice models never assigned to a position (an explicit
 	// Utterance.Voice still speaks); none by default.
 	Exclude []string
+	// Accents lets controllers speak with their airport's accent (the
+	// Czech, German, Dutch, Polish, French, Italian and Spanish models on
+	// English phonemes); off by default: English voices only, until the
+	// accent models are trained for English.
+	Accents bool
 	// ATIS, when set, is asked every Tick for the ATIS on the frequency
 	// followed (its airport and text); otherwise SetATIS's are used.
 	ATIS func(freq string) (airport, text string, ok bool)
@@ -278,7 +283,11 @@ func openPiper(opt Options) (*engine, error) {
 		e.Close()
 		return nil, err
 	}
-	pool := voices.NewPool(man, voices.PoolOptions{Seed: time.Now().UnixNano(), AllowUnaudited: true, Dir: opt.VoicesDir, Exclude: opt.Exclude, FemaleShare: FemaleShare})
+	exclude := opt.Exclude
+	if !opt.Accents {
+		exclude = append(append([]string(nil), exclude...), voices.AccentModels(man)...)
+	}
+	pool := voices.NewPool(man, voices.PoolOptions{Seed: time.Now().UnixNano(), AllowUnaudited: true, Dir: opt.VoicesDir, Exclude: exclude, FemaleShare: FemaleShare})
 	return &engine{tts: e, backend: backend, pool: pool, chain: radio.Default(), norm: normalise.New()}, nil
 }
 
