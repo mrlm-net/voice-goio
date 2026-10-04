@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-10-04
+
+### Added
+
+- voices: voice packs (#17). `Manifest.Pack(name)`: `PackEnglish` ("en", every English model) and `PackAll` ("all", with the accent models); `Manifest.WritePack` zips a pack of the installed models with a manifest of just them, for an installer (unpacked into the voices folder). voicecheck: `download -pack en|all` and `pack -pack en|all -out file.zip`. Today: English 15 models, 1.02 GB; all 23, 1.52 GB.
+
 ## [0.7.1] — 2026-10-04
 
 ### Changed
