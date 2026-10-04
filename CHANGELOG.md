@@ -7,6 +7,13 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-10-04
+
+### Changed
+
+- voices: the Czech controller voice (cs_CZ-jirka-medium) reads English through RP phonemes (espeak en-gb-x-rp), the words pronounced as every English voice says them, a light Czech accent; assigned first at Czech airports (LK) again. More voices per country are added to the catalogue and assigned the same way.
+- speaker: `Options.Exclude` leaves voices out; nothing is excluded by default (ExcludedVoice was).
+
 ## [0.6.0] — 2026-10-04
 
 ### Added
