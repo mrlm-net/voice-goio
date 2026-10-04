@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-10-04
+
+### Changed
+
+- voices: every accent model (German thorsten and MLS, Dutch, Polish, French, Italian, Spanish) reads English through RP phonemes like the Czech one: the words as every English voice says them, the accent in the voice. At a German, Dutch or French airport the 20-speaker MLS models give every position an accent.
+
 ## [0.7.0] — 2026-10-04
 
 ### Changed
