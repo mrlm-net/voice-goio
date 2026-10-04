@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
 
 	voicegoio "github.com/mrlm-net/voice-goio"
 	"github.com/mrlm-net/voice-goio/internal/jsonl"
@@ -126,7 +128,11 @@ func line(v voicegoio.VoiceProfile, text string) jsonl.Line {
 	return l
 }
 
-// speak synthesises one utterance.
+// speak synthesises one utterance. A text of several sentences is said a
+// sentence at a time, joined with piper's own sentence silence: piper
+// writes a sentence's audio once it is computed, and the pause while it
+// computes the next one is longer than idleGap, so one round heard only the
+// first sentence (a passenger announcement cut after its first sentence).
 func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string, rate int, timeout, idleGap time.Duration) ([]int16, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -134,7 +140,47 @@ func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string,
 		return nil, fmt.Errorf("piper: sidecar exited: %s", p.errBuf.tail())
 	}
 	p.drain()
+	parts := sentences(text)
+	if len(parts) <= 1 {
+		return p.speakOne(ctx, v, text, rate, timeout, idleGap)
+	}
+	gap := make([]int16, int(sentenceSilenceSeconds*float64(rate)))
+	var out []int16
+	for i, part := range parts {
+		pcm, err := p.speakOne(ctx, v, part, rate, timeout, idleGap)
+		if err != nil {
+			return nil, err
+		}
+		if i > 0 {
+			out = append(out, gap...)
+		}
+		out = append(out, pcm...)
+	}
+	return out, nil
+}
 
+// sentences splits text after each . ! or ? followed by a space (not in
+// "118.31"), each sentence trimmed, none empty.
+func sentences(text string) []string {
+	var out []string
+	start := 0
+	for i := 0; i < len(text)-1; i++ {
+		if c := text[i]; (c == '.' || c == '!' || c == '?') && unicode.IsSpace(rune(text[i+1])) {
+			if s := strings.TrimSpace(text[start : i+1]); s != "" {
+				out = append(out, s)
+			}
+			start = i + 1
+		}
+	}
+	if s := strings.TrimSpace(text[start:]); s != "" {
+		out = append(out, s)
+	}
+	return out
+}
+
+// speakOne synthesises one sentence (or a text piper says in one go), with
+// p.mu held.
+func (p *proc) speakOne(ctx context.Context, v voicegoio.VoiceProfile, text string, rate int, timeout, idleGap time.Duration) ([]int16, error) {
 	key := shape(v)
 	sentinel, ok := p.sentinels[key]
 	if !ok {
@@ -174,8 +220,9 @@ func (p *proc) speak(ctx context.Context, v voicegoio.VoiceProfile, text string,
 // text and the sentinel are apart; sentinelGap is the least of it that
 // counts as that gap.
 const (
-	sentenceSilence = "0.2"
-	sentinelGap     = 120 * time.Millisecond
+	sentenceSilence        = "0.2"
+	sentenceSilenceSeconds = 0.2
+	sentinelGap            = 120 * time.Millisecond
 )
 
 // beforeSentinel is raw up to the silence before the sentinel word: from
