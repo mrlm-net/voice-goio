@@ -6,9 +6,10 @@
 // The rules:
 //
 //   - Voices: piper (tts.Open) with the default voice pool (voices.json),
-//     the airport's accent first (at a Czech airport the Czech voice, RP
-//     phonemes: a light accent, the words as every English voice says
-//     them), Options.Exclude never, FemaleShare of
+//     English voices; with Options.Accents (off by default) the airport's
+//     accent first (at a Czech airport the Czech voice on RP phonemes: a
+//     light accent, the words as every English voice says them),
+//     Options.Exclude never, FemaleShare of
 //     the positions with a female voice, the radio.Default chain and
 //     normalise. A voice per controller position at an airport, handed over
 //     every ShiftMin to ShiftMax (a new controller, a new voice: "LKPR",

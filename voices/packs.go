@@ -87,3 +87,15 @@ func addFile(z *zip.Writer, path, name string) error {
 	_, err = io.Copy(dst, src)
 	return err
 }
+
+// AccentModels are the models that read English through another
+// language's voice (an espeak override): the controller accents.
+func AccentModels(m *Manifest) []string {
+	var out []string
+	for _, mod := range m.Models {
+		if mod.EspeakOverride != "" {
+			out = append(out, mod.Name)
+		}
+	}
+	return out
+}

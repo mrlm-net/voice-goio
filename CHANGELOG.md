@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-10-04
+
+### Changed
+
+- speaker: the controller accents are opt-in, `Options.Accents` (off by default): English voices only unless asked, until the accent models are trained for English. `voices.AccentModels` lists them.
+
 ## [0.8.0] — 2026-10-04
 
 ### Added
