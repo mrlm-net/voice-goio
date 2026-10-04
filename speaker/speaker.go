@@ -45,8 +45,11 @@ const (
 	// voice on the frequency); a crew keeps its voice for good.
 	ShiftMin = 30 * time.Minute
 	ShiftMax = 60 * time.Minute
-	// ExcludedVoice is never assigned: the Czech model reading English
-	// sounds wrong on the radio.
+	// ExcludedVoice was never assigned before v0.7.0: the Czech model read
+	// English through the US phonemizer badly. Through RP phonemes it is the
+	// light Czech accent of a controller at a Czech airport (LK), the words
+	// pronounced as every English voice says them; an application that does
+	// not want it lists it in Options.Exclude.
 	ExcludedVoice = "cs_CZ-jirka-medium"
 	// FemaleShare is the share of positions given a female voice (1:8).
 	FemaleShare = 1.0 / 9
@@ -120,6 +123,9 @@ type Options struct {
 	Device string
 	// Hint is appended to ErrNoVoice in the status, e.g. "see the README".
 	Hint string
+	// Exclude lists voice models never assigned to a position (an explicit
+	// Utterance.Voice still speaks); none by default.
+	Exclude []string
 	// ATIS, when set, is asked every Tick for the ATIS on the frequency
 	// followed (its airport and text); otherwise SetATIS's are used.
 	ATIS func(freq string) (airport, text string, ok bool)
@@ -272,7 +278,7 @@ func openPiper(opt Options) (*engine, error) {
 		e.Close()
 		return nil, err
 	}
-	pool := voices.NewPool(man, voices.PoolOptions{Seed: time.Now().UnixNano(), AllowUnaudited: true, Dir: opt.VoicesDir, Exclude: []string{ExcludedVoice}, FemaleShare: FemaleShare})
+	pool := voices.NewPool(man, voices.PoolOptions{Seed: time.Now().UnixNano(), AllowUnaudited: true, Dir: opt.VoicesDir, Exclude: opt.Exclude, FemaleShare: FemaleShare})
 	return &engine{tts: e, backend: backend, pool: pool, chain: radio.Default(), norm: normalise.New()}, nil
 }
 

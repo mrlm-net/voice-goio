@@ -1250,7 +1250,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-CZ",
       "speaker_count": 1,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": []
     },
     {
