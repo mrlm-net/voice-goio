@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-10-04
+
+### Fixed
+
+- tts/piper: a text of several sentences is said whole. Piper writes each sentence's audio once it is computed, and the pause while it computes the next one is longer than the idle gap, so only the first sentence was returned (a passenger announcement cut after its first sentence). The text is now said a sentence at a time, joined with piper's 0.2 s sentence silence (#22).
+
 ## [0.11.0] — 2026-10-04
 
 ### Added
