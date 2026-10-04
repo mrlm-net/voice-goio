@@ -1181,7 +1181,7 @@
       "license": "CC0-1.0",
       "accent": "en-DE",
       "speaker_count": 1,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": []
     },
     {
@@ -1193,7 +1193,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-DE",
       "speaker_count": 20,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": [],
       "accents": [
         "en-DE"
@@ -1208,7 +1208,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-NL",
       "speaker_count": 20,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": [],
       "accents": [
         "en-NL"
@@ -1223,7 +1223,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-PL",
       "speaker_count": 1,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": []
     },
     {
@@ -1235,7 +1235,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-FR",
       "speaker_count": 20,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": [],
       "accents": [
         "en-FR"
@@ -1262,7 +1262,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-IT",
       "speaker_count": 1,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": []
     },
     {
@@ -1274,7 +1274,7 @@
       "license": "CC-BY-4.0",
       "accent": "en-ES",
       "speaker_count": 1,
-      "espeak_override": "en-us",
+      "espeak_override": "en-gb-x-rp",
       "speakers": []
     }
   ],
