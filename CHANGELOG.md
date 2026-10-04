@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-10-04
+
+### Added
+
+- voices: `PackCore` ("core"), an installer's default: the English voices the pool mostly uses (en_GB-alan, en_GB-vctk, en_US-lessac, en_US-ryan) and one controller accent model per country (cs_CZ-jirka, de_DE-mls, fr_FR-mls, nl_NL-mls, pl_PL-mls, it_IT-riccardo, es_ES-mls): 11 models, 702 MB as a zip. "en" (15 models, 1.02 GB) and "all" (23, 1.52 GB) stay as optional downloads.
+
 ## [0.9.0] — 2026-10-04
 
 ### Changed
