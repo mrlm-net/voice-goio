@@ -26,6 +26,10 @@ func TestPacks(t *testing.T) {
 			t.Errorf("%s in the English pack", mod.Name)
 		}
 	}
+	core, _ := m.Pack(PackCore)
+	if len(core) != 11 {
+		t.Errorf("core %d models, want 4 English and 7 accents", len(core))
+	}
 	if _, err := m.Pack("xx"); err == nil {
 		t.Error("an unknown pack")
 	}

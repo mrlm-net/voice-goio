@@ -7,12 +7,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
 // Voice packs (#17): the sets of models shipped together, e.g. by an
 // application's installer.
 const (
+	// PackCore is the default an installer ships: the English voices the
+	// pool mostly uses (coreEnglish) and the controller accent models.
+	PackCore = "core"
 	// PackEnglish is every English model: controllers and crews without
 	// accents.
 	PackEnglish = "en"
@@ -23,13 +27,26 @@ const (
 )
 
 // Packs are the packs' names.
-func Packs() []string { return []string{PackEnglish, PackAll} }
+func Packs() []string { return []string{PackCore, PackEnglish, PackAll} }
+
+// core are the models of PackCore: the English voices the pool mostly
+// uses and one accent model per country (German: the 20-speaker MLS).
+var core = []string{"en_GB-alan-medium", "en_GB-vctk-medium", "en_US-lessac-medium", "en_US-ryan-medium",
+	"cs_CZ-jirka-medium", "de_DE-mls-medium", "fr_FR-mls-medium", "nl_NL-mls-medium", "pl_PL-mls-medium", "it_IT-riccardo-x_low", "es_ES-mls-medium"}
 
 // Pack is the models of pack name in manifest order.
 func (m *Manifest) Pack(name string) ([]Model, error) {
 	switch name {
 	case PackAll:
 		return append([]Model(nil), m.Models...), nil
+	case PackCore:
+		var out []Model
+		for _, mod := range m.Models {
+			if slices.Contains(core, mod.Name) {
+				out = append(out, mod)
+			}
+		}
+		return out, nil
 	case PackEnglish:
 		var out []Model
 		for _, mod := range m.Models {
