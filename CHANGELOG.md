@@ -7,6 +7,14 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-10-04
+
+### Added
+
+- speaker: an output device per channel. `SetDeviceFor(ChannelRadio | ChannelIntercom | ChannelPA, id)` routes one channel; "" goes back to the main device (`SetDevice`), which stays the default. `State().DeviceFor` lists the channels routed elsewhere.
+- speaker: a cabin PA channel. `SayPA(text, voice)` speaks on its own queue and player, in order with itself and independent of the intercom, so a PA and an intercom call can overlap. `Chime(ChimePA)` now plays on the PA. `Utterance.PA` queues on the PA too, and `Clip` renders a PA through the cabin chain.
+- speaker: `PAChain`, a light cabin-speaker sound: band-limited to about 300 Hz–4 kHz, with two early reflections; no noise or squelch.
+
 ## [0.11.2] — 2026-10-04
 
 ### Added
