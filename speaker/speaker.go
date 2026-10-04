@@ -50,6 +50,12 @@ const (
 	ExcludedVoice = "cs_CZ-jirka-medium"
 	// FemaleShare is the share of positions given a female voice (1:8).
 	FemaleShare = 1.0 / 9
+	// IntercomKey is the player queue of the intercom: the cockpit and the
+	// cabin, heard beside the radio, never through it.
+	IntercomKey = "intercom"
+	// IntercomGap is the pause between two intercom utterances (a challenge
+	// and its response), synthesis included.
+	IntercomGap = 400 * time.Millisecond
 )
 
 // Positions, as Utterance.Position takes them (the values of simconnect's
@@ -88,6 +94,18 @@ type Utterance struct {
 	// Phraseology is the reading of numbers and frequencies: voicegoio.FAA
 	// at a US airport, voicegoio.ICAO ("" too) elsewhere.
 	Phraseology voicegoio.Phraseology
+	// Voice, when set, is the voice it is said in (a crew member's voice the
+	// player chose: voices.Model.Profile), winning over the pool's pick; even
+	// ExcludedVoice is said if asked for. A Radio left "" is the position's
+	// (Center for a pilot); prosody left zero is piper's default.
+	Voice *voicegoio.VoiceProfile
+	// Intercom: said in the cockpit or the cabin, not on the radio. No radio
+	// chain (no band-pass, noise or squelch), not tied to the frequency
+	// followed: Hear queues it even while the speaker is off or follows
+	// another frequency (or none), and a change of frequency does not drop
+	// it. It plays on its own player queue (IntercomKey), one at a time with
+	// IntercomGap between, beside the radio. Frequency is ignored.
+	Intercom bool
 }
 
 // Options configures a Speaker.
@@ -160,7 +178,7 @@ type engine struct {
 
 // timing holds the constants above; tests shorten them.
 type timing struct {
-	maxLag, gap, jitter, atisGap, tick time.Duration
+	maxLag, gap, jitter, atisGap, tick, icGap time.Duration
 }
 
 type item struct {
@@ -202,6 +220,10 @@ type Speaker struct {
 	lastCS  string
 	shifts  map[string]*shift
 	rng     *rand.Rand
+	// The intercom: its own queue and player, untouched by Set.
+	icQueue   chan item
+	icPlayer  player
+	icLastEnd time.Time
 
 	openEngine func() (*engine, error)
 	newPlayer  func(device string) (player, []voicegoio.Device, error)
@@ -211,7 +233,7 @@ type Speaker struct {
 
 // New makes a speaker, off; nothing is opened until it is turned on.
 func New(opt Options) *Speaker {
-	s := newSpeaker(opt, timing{maxLag: MaxLag, gap: Gap, jitter: GapJitter, atisGap: ATISGap, tick: Tick})
+	s := newSpeaker(opt, timing{maxLag: MaxLag, gap: Gap, jitter: GapJitter, atisGap: ATISGap, tick: Tick, icGap: IntercomGap})
 	s.openEngine = func() (*engine, error) { return openPiper(s.opt) }
 	s.newPlayer = openPlayer
 	go s.run()
@@ -224,10 +246,11 @@ func newSpeaker(opt Options, t timing) *Speaker {
 	}
 	return &Speaker{
 		opt: opt, t: t, status: "off", device: opt.Device,
-		queue: make(chan item, 64),
-		atis:  map[string]atisInfo{},
-		rng:   rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x70ce)),
-		done:  make(chan struct{}),
+		queue:   make(chan item, 64),
+		icQueue: make(chan item, 64),
+		atis:    map[string]atisInfo{},
+		rng:     rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x70ce)),
+		done:    make(chan struct{}),
 	}
 }
 
@@ -350,9 +373,11 @@ func (s *Speaker) SetDevice(id string) error {
 	if id == s.device {
 		return nil
 	}
-	if s.player != nil {
-		if err := s.player.SetDevice(id); err != nil {
-			return err
+	for _, p := range []player{s.player, s.icPlayer} {
+		if p != nil {
+			if err := p.SetDevice(id); err != nil {
+				return err
+			}
 		}
 	}
 	s.device = id
@@ -360,9 +385,14 @@ func (s *Speaker) SetDevice(id string) error {
 }
 
 // Hear takes an utterance from the radio: queued if the speaker is on and
-// it is on the frequency followed (nothing without one). It never blocks;
-// a full queue drops it.
+// it is on the frequency followed (nothing without one). An Intercom
+// utterance is queued on the intercom whatever the speaker's state. It never
+// blocks; a full queue drops it.
 func (s *Speaker) Hear(u Utterance) {
+	if u.Intercom {
+		s.queueIntercom(u)
+		return
+	}
 	s.mu.Lock()
 	skip := !s.on || s.freq == "" || u.Frequency != s.freq || u.Position == PosATIS
 	s.mu.Unlock()
@@ -377,8 +407,12 @@ func (s *Speaker) Hear(u Utterance) {
 
 // SayOnce says u now, whatever the frequency followed and even while off
 // (an airport panel's ATIS button); false when the voice is unavailable
-// (State().Status says why).
+// (State().Status says why). An Intercom utterance is queued on the
+// intercom, as SayIntercom.
 func (s *Speaker) SayOnce(u Utterance) bool {
+	if u.Intercom {
+		return s.intercom(u)
+	}
 	s.mu.Lock()
 	if !s.on {
 		if err := s.open(); err != nil {
@@ -394,6 +428,139 @@ func (s *Speaker) SayOnce(u Utterance) bool {
 	}
 	go s.say(u, true)
 	return true
+}
+
+// SayIntercom says text on the intercom in voice: the cockpit voice, without
+// the radio chain, whatever the frequency followed and even while the radio
+// is off. Queued behind what the intercom is saying; false when the voice is
+// unavailable (State().Status says why while the radio is off; logged).
+func (s *Speaker) SayIntercom(text string, voice voicegoio.VoiceProfile) bool {
+	return s.intercom(Utterance{Intercom: true, Text: text, Voice: &voice})
+}
+
+// intercom opens the voice and queues u on the intercom.
+func (s *Speaker) intercom(u Utterance) bool {
+	u.Intercom = true
+	s.mu.Lock()
+	err := s.openIntercomLocked()
+	if err != nil {
+		if !s.on {
+			s.status = err.Error()
+		}
+		s.mu.Unlock()
+		s.opt.Logf("voice: intercom: %v", err)
+		return false
+	}
+	s.mu.Unlock()
+	return s.queueIntercom(u)
+}
+
+// queueIntercom queues u on the intercom without blocking; false when the
+// queue is full (u is dropped).
+func (s *Speaker) queueIntercom(u Utterance) bool {
+	select {
+	case s.icQueue <- item{u, time.Now()}:
+		return true
+	default: // behind: drop it
+		return false
+	}
+}
+
+// openIntercomLocked opens the voices and the intercom's player; s.mu held.
+func (s *Speaker) openIntercomLocked() error {
+	select {
+	case <-s.done:
+		return voicegoio.ErrClosed
+	default:
+	}
+	if err := s.openEngineLocked(); err != nil {
+		return err
+	}
+	if s.icPlayer == nil {
+		p, d, err := s.newPlayer(s.device)
+		if err != nil {
+			return err
+		}
+		if d != nil {
+			s.devices = d
+		}
+		s.icPlayer = p
+	}
+	return nil
+}
+
+// runIntercom says what is queued on the intercom, one at a time.
+func (s *Speaker) runIntercom() {
+	for {
+		select {
+		case <-s.done:
+			return
+		case it := <-s.icQueue:
+			if time.Since(it.when) > s.t.maxLag {
+				continue
+			}
+			s.sayIntercom(it.u)
+		}
+	}
+}
+
+// sayIntercom synthesises u in its voice, without the radio chain, and waits
+// while it is played on the intercom.
+func (s *Speaker) sayIntercom(u Utterance) {
+	s.mu.Lock()
+	err := s.openIntercomLocked()
+	e, p, next := s.eng, s.icPlayer, s.icLastEnd.Add(s.t.icGap)
+	s.mu.Unlock()
+	if err != nil {
+		s.opt.Logf("voice: intercom: %v", err)
+		return
+	}
+	voice := s.voiceOf(e, u)
+	ph := phraseology(u.Phraseology)
+	pcm, err := e.tts.Synthesize(context.Background(), voice, SpokenEnd(e.norm.Spoken(u.Text, ph)))
+	if err != nil {
+		s.opt.Logf("voice: intercom: %v", err)
+		return
+	}
+	rate := e.tts.SampleRate(voice)
+	out := Pad(pcm, rate) // the player converts the rate
+	if !s.sleep(time.Until(next)) {
+		return
+	}
+	if s.opt.OnSay != nil {
+		s.opt.OnSay(u)
+	}
+	if err := p.Play(voicegoio.Transmission{Frequency: IntercomKey, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, rate); err != nil {
+		return // closed meanwhile
+	}
+	said := samplesDuration(len(out), rate)
+	s.mu.Lock()
+	s.icLastEnd = time.Now().Add(said)
+	s.mu.Unlock()
+	s.sleep(said)
+}
+
+// sleep waits d unless the speaker is closed meanwhile, and reports whether
+// it was not.
+func (s *Speaker) sleep(d time.Duration) bool {
+	if d <= 0 {
+		return true
+	}
+	select {
+	case <-s.done:
+		return false
+	case <-time.After(d):
+		return true
+	}
+}
+
+// who is the player's ControllerID for u: the pilot's call sign, else the
+// position.
+func who(u Utterance) string {
+	if u.Pilot {
+		return u.Callsign
+	}
+	return u.Position
 }
 
 // SetATIS sets the ATIS broadcast on freq: airport's text (with its
@@ -429,6 +596,10 @@ func (s *Speaker) Close() error {
 		s.player.Close()
 		s.player = nil
 	}
+	if s.icPlayer != nil {
+		s.icPlayer.Close()
+		s.icPlayer = nil
+	}
 	if s.eng != nil {
 		s.eng.tts.Close()
 		s.eng = nil
@@ -437,8 +608,10 @@ func (s *Speaker) Close() error {
 }
 
 // run says what is queued; while the followed frequency is an ATIS and
-// nothing else is to be said, it says the ATIS again and again.
+// nothing else is to be said, it says the ATIS again and again. The intercom
+// runs beside it.
 func (s *Speaker) run() {
+	go s.runIntercom()
 	for {
 		select {
 		case <-s.done:
@@ -528,9 +701,19 @@ func (s *Speaker) wait(d time.Duration, freq string, p player) bool {
 	return true
 }
 
-// voiceOf is the voice u is said in: the crew's own, or the controller on
-// shift at the position.
+// voiceOf is the voice u is said in: its own (Voice), the crew's, or the
+// controller on shift at the position.
 func (s *Speaker) voiceOf(e *engine, u Utterance) voicegoio.VoiceProfile {
+	if u.Voice != nil {
+		v := *u.Voice
+		if v.Radio == "" {
+			v.Radio = string(KindOf(u.Position))
+			if u.Pilot {
+				v.Radio = string(voicegoio.Center)
+			}
+		}
+		return v
+	}
 	if u.Pilot {
 		return e.pool.Assign(u.Callsign, voicegoio.Center) // each crew its own voice
 	}
@@ -571,14 +754,10 @@ func (s *Speaker) say(u Utterance, force bool) {
 	if wait > 0 && !s.wait(wait, freq, p) {
 		return // another frequency meanwhile
 	}
-	who := u.Position
-	if u.Pilot {
-		who = u.Callsign
-	}
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
-	if err := p.Play(voicegoio.Transmission{Frequency: QueueKey, ControllerID: who, Phraseology: ph, Text: u.Text}, out, p.SampleRate()); err != nil {
+	if err := p.Play(voicegoio.Transmission{Frequency: QueueKey, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, p.SampleRate()); err != nil {
 		return // turned off meanwhile
 	}
 	// Wait while it is said, so the queue stays on the lag it has.
@@ -591,7 +770,8 @@ func (s *Speaker) say(u Utterance, force bool) {
 
 // Clip is u as said on the radio, at the voice's own rate, without a
 // player: for a client that plays the radio on its own device. ATIS
-// utterances (PosATIS) are in the airport's ATIS voice.
+// utterances (PosATIS) are in the airport's ATIS voice unless u.Voice says
+// otherwise; Intercom utterances come without the radio chain.
 func (s *Speaker) Clip(u Utterance) (pcm []int16, rate int, err error) {
 	s.mu.Lock()
 	err = s.openEngineLocked()
@@ -601,7 +781,7 @@ func (s *Speaker) Clip(u Utterance) (pcm []int16, rate int, err error) {
 		return nil, 0, err
 	}
 	var voice voicegoio.VoiceProfile
-	if u.Position == PosATIS && !u.Pilot {
+	if u.Position == PosATIS && !u.Pilot && u.Voice == nil {
 		voice = e.pool.Assign(u.Airport, voicegoio.ATIS)
 	} else {
 		voice = s.voiceOf(e, u)
@@ -611,6 +791,9 @@ func (s *Speaker) Clip(u Utterance) (pcm []int16, rate int, err error) {
 		return nil, 0, err
 	}
 	rate = e.tts.SampleRate(voice)
+	if u.Intercom {
+		return raw, rate, nil
+	}
 	return e.chain.Apply(raw, rate, voice.Radio, rate, int64(len(u.Text))), rate, nil
 }
 

@@ -109,6 +109,24 @@ switch r.Tags[voicegoio.TagIntent] { ... }
 
 On macOS use `stt/fake` (typed input or a script) — the same interface.
 
+The ATC grammar is the default, not the only one. An application listening
+for its own phrases (cockpit commands: "request taxi", "gear up", "doors
+closed") builds a grammar from them and hands it to SAPI; each phrase comes
+back as its intent. `grammar.Match` is the same matching for typed input and
+away from Windows. A hand-written SRGS file works too (`Options.GrammarPath`):
+its public root rule must be `transmission`, its tags set `out.intent`, and a
+`callsign` rule is what `SetCallsigns` rebuilds.
+
+```go
+cmds := []grammar.Command{
+    {Intent: "gear_up", Phrases: []string{"gear up", "landing gear up"}},
+    {Intent: "doors_closed", Phrases: []string{"doors closed"}},
+}
+g, _ := grammar.Commands(cmds)
+rec, err := sapi.New(sapi.Options{Grammar: g}) // r.Tags["intent"] == "gear_up"
+intent, ok := grammar.Match(cmds, "Gear up")  // typed: "gear_up", true
+```
+
 As a typing convenience, `stt/fake` also accepts the identifier and plain
 digits: `CSA1234 with you, 15000` and `DLH4EK request climb FL370` tag exactly
 as their spoken equivalents do. Speech never produces those forms, so nothing
@@ -132,6 +150,21 @@ sp.Hear(speaker.Utterance{Airport: "LKPR", Position: speaker.PosTower,
 fmt.Println(sp.State().Status)          // "on (piper)", or why it is silent
 ```
 
+The crew and the cabin talk on the **intercom**: the same voices, without the
+radio chain (no band-pass, noise or squelch), and not tied to the frequency
+followed — it speaks with the radio off, on another frequency or none, on its
+own queue beside the radio. `Utterance.Voice` gives the voice explicitly (each
+crew member in the voice the player chose) and wins over the pool's pick, on
+the intercom and on the radio. `voices.Dir()` is the per-user models folder
+and `voices.Installed` lists what is in it, for a voice picker.
+
+```go
+man, _ := voices.LoadDefault()
+copilot := voices.Installed(man, voices.Dir())[0].Profile(0) // model + speaker the player chose
+sp.SayIntercom("Before start checklist complete", copilot)
+sp.Hear(speaker.Utterance{Intercom: true, Position: "purser", Text: "Cabin secure", Voice: &purser})
+```
+
 The package documentation (`go doc ./speaker`) has the mapping from
 simconnect's `traffic.Transmission` and what has to sit beside the
 application at runtime: piper's folder (`bin/piper/piper.exe` next to the
@@ -146,14 +179,14 @@ read-only install folder.
 |---|---|
 | `voicegoio.go` | The whole public API: interfaces and value types. This file is the compatibility surface. |
 | `normalise/` | `BAW123 climb FL350` → `Speedbird one two tree, climb flight level tree fife zero`. ICAO and FAA, plus emergency signals, METAR shorthand and the pauses. |
-| `data/`, `grammar/` | Embedded telephony table and the SRGS grammar (leaf packages, because `go:embed` cannot reach out of its own directory). |
+| `data/`, `grammar/` | Embedded telephony table and the SRGS grammar, and `grammar.Commands` for an application's own phrases (leaf packages, because `go:embed` cannot reach out of its own directory). |
 | `tts/piper/` | The shipping synthesiser: a pool of warm piper sidecars, JSON lines in, raw PCM out. |
 | `tts/say/` | macOS development synthesiser. English voices only, no downloads. Not a shipping backend. |
 | `tts/fake/` | Deterministic tone generator for CI and regression. |
 | `stt/sapi/` | Windows SAPI 5 in-process recognizer over raw COM vtables. |
 | `stt/fake/` | The tag parser plus stdin and script recognisers, for development and regression. |
 | `audio/radio/` | The radio chain: band pass, presence, soft clip, noise, squelch, dropouts, level, resample. |
-| `speaker/` | The radio, heard: voices per position and crew, one frequency, the queue, the gaps, the ATIS broadcast — the rules applications share. |
+| `speaker/` | The radio, heard: voices per position and crew, one frequency, the queue, the gaps, the ATIS broadcast — the rules applications share; the intercom beside it, without the radio. |
 | `audio/` | Per-frequency queues and playback events; `winmm` on Windows, `afplay` on macOS, WAV files elsewhere. |
 | `voices/` | Manifest, downloader, region-weighted voice assignment. |
 | `cmd/voicecheck` | Regression and audit CLI. |
@@ -276,6 +309,12 @@ for `en_GB-vctk-medium`, whose 109 speakers span the British Isles, Australia,
 New Zealand, India, South Africa and Canada: calling the whole model "en-GB"
 would leave a Sydney or Delhi controller with no regional voice at all.
 `Assign` records the accent it chose on `VoiceProfile.Accent`.
+
+Models are downloaded to and read from the per-user folder, `voices.Dir()`
+(`%LOCALAPPDATA%\voice-goio\voices` on Windows, never the working directory);
+`voices.Installed(manifest, dir)` lists the manifest's models present in a
+folder, and `Model.Profile(speakerID)` is one of their voices as a
+`VoiceProfile`.
 
 ```bash
 go run ./cmd/voicecheck voices                             # pool report vs. the bar

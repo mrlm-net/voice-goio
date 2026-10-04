@@ -34,10 +34,19 @@ var ErrNoAudioInput = errors.New("sapi: no audio input device is available to th
 
 // Options configures the recogniser.
 type Options struct {
-	// GrammarPath is an SRGS XML file. Empty means the grammar embedded in the
-	// grammar package, written to a temporary file (SAPI compiles XML only
-	// from a file).
+	// GrammarPath is an SRGS XML file. Empty means Grammar, else the ATC
+	// grammar embedded in the grammar package (grammar.ATC).
+	//
+	// An application's own grammar (cockpit commands, grammar.Commands) has a
+	// public root rule "transmission", activated while push to talk is held,
+	// whose <tag>s set out.intent (and any other property: every one becomes
+	// a Recognition tag); a result without an intent is say_again. A rule
+	// "callsign" is what SetCallsigns rebuilds.
 	GrammarPath string
+	// Grammar is SRGS XML text used when GrammarPath is empty (e.g. from
+	// grammar.Commands), written to a temporary file as SAPI compiles XML
+	// only from a file; "" the ATC grammar.
+	Grammar string
 	// Locale selects the recognizer token, e.g. "en-US" or "en-GB". Empty
 	// accepts whichever English engine Windows offers.
 	Locale string
