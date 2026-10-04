@@ -45,10 +45,12 @@ type Speaker struct {
 
 // Model is one .onnx/.onnx.json pair.
 type Model struct {
-	Name       string `json:"name"`
-	ONNX       string `json:"onnx"`   // path relative to the repository root
-	Config     string `json:"config"` // path relative to the repository root
-	SHA256     string `json:"sha256"`
+	Name   string `json:"name"`
+	ONNX   string `json:"onnx"`   // path relative to the repository root
+	Config string `json:"config"` // path relative to the repository root
+	SHA256 string `json:"sha256"`
+	// Size is the download size in bytes, the model and its config.
+	Size       int64  `json:"size,omitempty"`
 	SampleRate int    `json:"sample_rate"`
 	License    string `json:"license"`
 	// Accent is the model's primary accent.

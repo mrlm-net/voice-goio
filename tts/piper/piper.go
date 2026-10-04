@@ -1,6 +1,7 @@
 // Package piper drives the piper neural TTS binary as a sidecar process.
 //
-// piper is a self contained executable: no Go bindings, no cgo, no network.
+// piper is a self contained executable: no Go bindings, no cgo, no network
+// while speaking (Install, a one-off, downloads the pinned release).
 // The library starts one long lived process per model file and speaks to it
 // over JSON lines on stdin, reading raw 16 bit PCM back on stdout. Keeping the
 // process warm is what makes the sub 300 ms first sample budget achievable;

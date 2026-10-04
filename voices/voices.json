@@ -4,7 +4,7 @@
       "name": "en_GB-vctk-medium",
       "onnx": "en/en_GB/vctk/medium/en_GB-vctk-medium.onnx",
       "config": "en/en_GB/vctk/medium/en_GB-vctk-medium.onnx.json",
-      "sha256": "",
+      "sha256": "4e9fc85ab9009385319fc6bae7f55577f8a2d7ee77fd9159a5500eb6531f41e6",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-GB",
@@ -896,13 +896,14 @@
         "en-CA",
         "en-GB-south",
         "en-US"
-      ]
+      ],
+      "size": 76959390
     },
     {
       "name": "en_US-libritts_r-medium",
       "onnx": "en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx",
       "config": "en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx.json",
-      "sha256": "",
+      "sha256": "10bb85e071d616fcf4071f369f1799d0491492ab3c5d552ec19fb548fac13195",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-US",
@@ -912,13 +913,14 @@
       "accents": [
         "en-US",
         "en-CA"
-      ]
+      ],
+      "size": 78601037
     },
     {
       "name": "en_US-l2arctic-medium",
       "onnx": "en/en_US/l2arctic/medium/en_US-l2arctic-medium.onnx",
       "config": "en/en_US/l2arctic/medium/en_US-l2arctic-medium.onnx.json",
-      "sha256": "",
+      "sha256": "d89f6f124bf1e7735b2179d2141b8001c3e19169d5e743ed6e35624f4c76f044",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-L2",
@@ -933,13 +935,14 @@
         "en-AR",
         "en-KO",
         "en-VI"
-      ]
+      ],
+      "size": 76783925
     },
     {
       "name": "en_US-arctic-medium",
       "onnx": "en/en_US/arctic/medium/en_US-arctic-medium.onnx",
       "config": "en/en_US/arctic/medium/en_US-arctic-medium.onnx.json",
-      "sha256": "",
+      "sha256": "483303e294947a3ec2f910ea96093d876e1640f5772e9d89e511d6c82c667286",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-US",
@@ -951,13 +954,14 @@
         "en-CA",
         "en-GB-scottish",
         "en-IN"
-      ]
+      ],
+      "size": 76771533
     },
     {
       "name": "en_GB-aru-medium",
       "onnx": "en/en_GB/aru/medium/en_GB-aru-medium.onnx",
       "config": "en/en_GB/aru/medium/en_GB-aru-medium.onnx.json",
-      "sha256": "",
+      "sha256": "9e74d089a8563f8b2446426d01becb046cd3c3bfbafe1a20fd03a9a79bd82619",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-GB",
@@ -967,13 +971,14 @@
       "accents": [
         "en-GB",
         "en-GB-north"
-      ]
+      ],
+      "size": 76759145
     },
     {
       "name": "en_GB-semaine-medium",
       "onnx": "en/en_GB/semaine/medium/en_GB-semaine-medium.onnx",
       "config": "en/en_GB/semaine/medium/en_GB-semaine-medium.onnx.json",
-      "sha256": "",
+      "sha256": "d6dab6f3b92db43ea3f78c7f20dc8eadb47a1f15d8a1c9d451cf3ccd201a2f66",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-GB",
@@ -983,13 +988,14 @@
       "accents": [
         "en-GB",
         "en-IE"
-      ]
+      ],
+      "size": 76742787
     },
     {
       "name": "en_US-ryan-medium",
       "onnx": "en/en_US/ryan/medium/en_US-ryan-medium.onnx",
       "config": "en/en_US/ryan/medium/en_US-ryan-medium.onnx.json",
-      "sha256": "",
+      "sha256": "abf4c274862564ed647ba0d2c47f8ee7c9b717d27bdad9219100eb310db4047a",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-US",
@@ -1004,13 +1010,14 @@
           "pass": true,
           "gender": "M"
         }
-      ]
+      ],
+      "size": 63206177
     },
     {
       "name": "en_US-joe-medium",
       "onnx": "en/en_US/joe/medium/en_US-joe-medium.onnx",
       "config": "en/en_US/joe/medium/en_US-joe-medium.onnx.json",
-      "sha256": "",
+      "sha256": "58afce0321b8d9c46d7cdf9c16500cc55a793b4220212dba6b70fb788b3baf06",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-US",
@@ -1024,13 +1031,14 @@
           "quality": 4,
           "pass": true
         }
-      ]
+      ],
+      "size": 63206088
     },
     {
       "name": "en_US-lessac-medium",
       "onnx": "en/en_US/lessac/medium/en_US-lessac-medium.onnx",
       "config": "en/en_US/lessac/medium/en_US-lessac-medium.onnx.json",
-      "sha256": "",
+      "sha256": "5efe09e69902187827af646e1a6e9d269dee769f9877d17b16b1b46eeaaf019f",
       "sample_rate": 22050,
       "license": "BSD-3-Clause",
       "accent": "en-US",
@@ -1045,13 +1053,14 @@
           "pass": true,
           "gender": "F"
         }
-      ]
+      ],
+      "size": 63206179
     },
     {
       "name": "en_US-hfc_male-medium",
       "onnx": "en/en_US/hfc_male/medium/en_US-hfc_male-medium.onnx",
       "config": "en/en_US/hfc_male/medium/en_US-hfc_male-medium.onnx.json",
-      "sha256": "",
+      "sha256": "d11e403a02bdf5a670c877b3dc56e0e1c8cece6fb30289586314dffdc0a78cb0",
       "sample_rate": 22050,
       "license": "CC0-1.0",
       "accent": "en-US",
@@ -1066,13 +1075,14 @@
           "pass": true,
           "gender": "M"
         }
-      ]
+      ],
+      "size": 63206327
     },
     {
       "name": "en_US-hfc_female-medium",
       "onnx": "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx",
       "config": "en/en_US/hfc_female/medium/en_US-hfc_female-medium.onnx.json",
-      "sha256": "",
+      "sha256": "914c473788fc1fa8b63ace1cdcdb44588f4ae523d3ab37df1536616835a140b7",
       "sample_rate": 22050,
       "license": "CC0-1.0",
       "accent": "en-US",
@@ -1087,13 +1097,14 @@
           "pass": true,
           "gender": "F"
         }
-      ]
+      ],
+      "size": 63206327
     },
     {
       "name": "en_GB-alan-medium",
       "onnx": "en/en_GB/alan/medium/en_GB-alan-medium.onnx",
       "config": "en/en_GB/alan/medium/en_GB-alan-medium.onnx.json",
-      "sha256": "",
+      "sha256": "0a309668932205e762801f1efc2736cd4b0120329622adf62be09e56339d3330",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-GB",
@@ -1107,13 +1118,14 @@
           "quality": 5,
           "pass": true
         }
-      ]
+      ],
+      "size": 63206182
     },
     {
       "name": "en_GB-alba-medium",
       "onnx": "en/en_GB/alba/medium/en_GB-alba-medium.onnx",
       "config": "en/en_GB/alba/medium/en_GB-alba-medium.onnx.json",
-      "sha256": "",
+      "sha256": "401369c4a81d09fdd86c32c5c864440811dbdcc66466cde2d64f7133a66ad03b",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-GB-scottish",
@@ -1128,13 +1140,14 @@
           "pass": true,
           "gender": "F"
         }
-      ]
+      ],
+      "size": 63206182
     },
     {
       "name": "en_GB-northern_english_male-medium",
       "onnx": "en/en_GB/northern_english_male/medium/en_GB-northern_english_male-medium.onnx",
       "config": "en/en_GB/northern_english_male/medium/en_GB-northern_english_male-medium.onnx.json",
-      "sha256": "",
+      "sha256": "57a219ae8e638873db7d18893304be5069c42868f392bb95c3ff17f0690d0689",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-GB-north",
@@ -1149,13 +1162,14 @@
           "pass": true,
           "gender": "M"
         }
-      ]
+      ],
+      "size": 63206141
     },
     {
       "name": "en_GB-southern_english_female-low",
       "onnx": "en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx",
       "config": "en/en_GB/southern_english_female/low/en_GB-southern_english_female-low.onnx.json",
-      "sha256": "",
+      "sha256": "f2f37aed1b3a093476f719d1379ba0c0b1b1cf6f1ef99288e2ebf502971a07c3",
       "sample_rate": 16000,
       "license": "CC-BY-4.0",
       "accent": "en-GB-south",
@@ -1170,25 +1184,27 @@
           "pass": true,
           "gender": "F"
         }
-      ]
+      ],
+      "size": 63108715
     },
     {
       "name": "de_DE-thorsten-medium",
       "onnx": "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
       "config": "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx.json",
-      "sha256": "",
+      "sha256": "7e64762d8e5118bb578f2eea6207e1a35a8e0c30595010b666f983fc87bb7819",
       "sample_rate": 22050,
       "license": "CC0-1.0",
       "accent": "en-DE",
       "speaker_count": 1,
       "espeak_override": "en-gb-x-rp",
-      "speakers": []
+      "speakers": [],
+      "size": 63206113
     },
     {
       "name": "de_DE-mls-medium",
       "onnx": "de/de_DE/mls/medium/de_DE-mls-medium.onnx",
       "config": "de/de_DE/mls/medium/de_DE-mls-medium.onnx.json",
-      "sha256": "",
+      "sha256": "69cd1d2aa5a35839a518966fcc4924b5f93e5f8c948ed0752b1a616ad53f65bf",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-DE",
@@ -1197,13 +1213,14 @@
       "speakers": [],
       "accents": [
         "en-DE"
-      ]
+      ],
+      "size": 76970027
     },
     {
       "name": "nl_NL-mls-medium",
       "onnx": "nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx",
       "config": "nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx.json",
-      "sha256": "",
+      "sha256": "88312e0fbf505b87caf2373d94c1384892e86b1bf2ee482cf65dc8ba179cc7d3",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-NL",
@@ -1212,25 +1229,27 @@
       "speakers": [],
       "accents": [
         "en-NL"
-      ]
+      ],
+      "size": 76590102
     },
     {
       "name": "pl_PL-mls-medium",
       "onnx": "pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx",
       "config": "pl/pl_PL/mls_6892/low/pl_PL-mls_6892-low.onnx.json",
-      "sha256": "",
+      "sha256": "b572ab1a0f1d3b722b2a545e0b38834e6f932852cd0f11a44c022baa8f104c10",
       "sample_rate": 16000,
       "license": "CC-BY-4.0",
       "accent": "en-PL",
       "speaker_count": 1,
       "espeak_override": "en-gb-x-rp",
-      "speakers": []
+      "speakers": [],
+      "size": 63108683
     },
     {
       "name": "fr_FR-mls-medium",
       "onnx": "fr/fr_FR/mls/medium/fr_FR-mls-medium.onnx",
       "config": "fr/fr_FR/mls/medium/fr_FR-mls-medium.onnx.json",
-      "sha256": "",
+      "sha256": "0ed223f78466917f2bae05ee90096ce69ab1fdeb251f55590d0e7422d234e162",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-FR",
@@ -1239,43 +1258,47 @@
       "speakers": [],
       "accents": [
         "en-FR"
-      ]
+      ],
+      "size": 76740786
     },
     {
       "name": "cs_CZ-jirka-medium",
       "onnx": "cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx",
       "config": "cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx.json",
-      "sha256": "",
+      "sha256": "cbd5c900acacc8e8cbecd64347abb8de39c00a9d3104bed06fee92e4f319efc8",
       "sample_rate": 22050,
       "license": "CC-BY-4.0",
       "accent": "en-CZ",
       "speaker_count": 1,
       "espeak_override": "en-gb-x-rp",
-      "speakers": []
+      "speakers": [],
+      "size": 63206319
     },
     {
       "name": "it_IT-riccardo-x_low",
       "onnx": "it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx",
       "config": "it/it_IT/riccardo/x_low/it_IT-riccardo-x_low.onnx.json",
-      "sha256": "",
+      "sha256": "1368de15f123275a7ef951c9e5e30be0f58a032daa14a0da44037443c1d1d21b",
       "sample_rate": 16000,
       "license": "CC-BY-4.0",
       "accent": "en-IT",
       "speaker_count": 1,
       "espeak_override": "en-gb-x-rp",
-      "speakers": []
+      "speakers": [],
+      "size": 28134952
     },
     {
       "name": "es_ES-mls-medium",
       "onnx": "es/es_ES/mls_9972/low/es_ES-mls_9972-low.onnx",
       "config": "es/es_ES/mls_9972/low/es_ES-mls_9972-low.onnx.json",
-      "sha256": "",
+      "sha256": "afdd61beb26d3aba18245c0352a8173e7f96196fbe4979e115590e8f775c95f0",
       "sample_rate": 16000,
       "license": "CC-BY-4.0",
       "accent": "en-ES",
       "speaker_count": 1,
       "espeak_override": "en-gb-x-rp",
-      "speakers": []
+      "speakers": [],
+      "size": 63108685
     }
   ],
   "regions": {

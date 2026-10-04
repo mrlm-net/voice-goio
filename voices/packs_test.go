@@ -73,3 +73,16 @@ func TestAccentModels(t *testing.T) {
 		}
 	}
 }
+
+// TestPackSize: every model has its size; core is several hundred MB.
+func TestPackSize(t *testing.T) {
+	m, _ := LoadDefault()
+	core, err := m.PackSize(PackCore)
+	if err != nil {
+		t.Fatal(err)
+	}
+	all, _ := m.PackSize(PackAll)
+	if core < 500e6 || all <= core {
+		t.Errorf("core %d, all %d bytes", core, all)
+	}
+}
