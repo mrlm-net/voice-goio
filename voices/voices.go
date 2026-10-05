@@ -182,6 +182,10 @@ type Pool struct {
 	mu   sync.Mutex
 	used map[string]map[string]bool // airport -> "model#speaker" -> taken
 	held map[string]voicegoio.VoiceProfile
+	// atc and crew are the voices given to controllers and to crews
+	// ("model#speaker"): one side never takes the other's while it has a
+	// voice of its own left (#29: a pilot in the tower's voice).
+	atc, crew map[string]bool
 	// have is the set of manifest models whose files are in Dir, looked up
 	// once (haveOnce).
 	have     map[string]bool
@@ -228,6 +232,8 @@ func NewPool(m *Manifest, opt PoolOptions) *Pool {
 		opt:  opt,
 		used: map[string]map[string]bool{},
 		held: map[string]voicegoio.VoiceProfile{},
+		atc:  map[string]bool{},
+		crew: map[string]bool{},
 	}
 }
 
@@ -305,7 +311,24 @@ func (p *Pool) Assign(icaoPrefix string, kind voicegoio.ControllerKind) voicegoi
 	if kind == voicegoio.ATIS {
 		return p.atisVoice()
 	}
+	return p.assign(icaoPrefix, kind, false)
+}
+
+// AssignCrew picks the voice of the crew of callsign: the same through the
+// session, with the radio sound of a cockpit (Center), never a voice a
+// controller has while another is free (#29).
+func (p *Pool) AssignCrew(callsign string) voicegoio.VoiceProfile {
+	return p.assign(callsign, voicegoio.Center, true)
+}
+
+// assign picks a voice for (icaoPrefix, kind), a crew's when crew.
+func (p *Pool) assign(icaoPrefix string, kind voicegoio.ControllerKind, crew bool) voicegoio.VoiceProfile {
 	key := strings.ToUpper(icaoPrefix) + "/" + string(kind)
+	mine, others := p.atc, p.crew
+	if crew {
+		key = "crew/" + key
+		mine, others = p.crew, p.atc
+	}
 
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -335,6 +358,12 @@ func (p *Pool) Assign(icaoPrefix string, kind voicegoio.ControllerKind) voicegoi
 		female := float64(hash64(p.opt.Seed, key+"/gender")%10000) < share*10000
 		passes = append([]func(candidate) bool{func(c candidate) bool { return c.female == female }}, passes...)
 	}
+	// The other side's voices only once none of this side's is left.
+	theirs := func(c candidate) bool { return others[fmt.Sprintf("%s#%d", c.model, c.speaker)] }
+	for i, fits := range passes[:len(passes)] {
+		passes[i] = func(c candidate) bool { return fits(c) && !theirs(c) }
+	}
+	passes = append(passes, func(candidate) bool { return true })
 	for _, fits := range passes {
 		for _, tier := range tiers(cands) {
 			offset := int(h % uint64(len(tier)))
@@ -362,6 +391,7 @@ func (p *Pool) Assign(icaoPrefix string, kind voicegoio.ControllerKind) voicegoi
 	v := voicegoio.VoiceProfile{Radio: radioProfile(kind)}
 	if found {
 		taken[fmt.Sprintf("%s#%d", chosen.model, chosen.speaker)] = true
+		mine[fmt.Sprintf("%s#%d", chosen.model, chosen.speaker)] = true
 		v.Model = chosen.model
 		v.SpeakerID = chosen.speaker
 		v.Accent = chosen.accent

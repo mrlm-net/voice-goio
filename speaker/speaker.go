@@ -180,6 +180,7 @@ type (
 	}
 	voicer interface {
 		Assign(key string, kind voicegoio.ControllerKind) voicegoio.VoiceProfile
+		AssignCrew(callsign string) voicegoio.VoiceProfile
 	}
 	effect interface {
 		Apply(pcm []int16, inRate int, profile string, outRate int, seed int64) []int16
@@ -896,7 +897,7 @@ func (s *Speaker) voiceOf(e *engine, u Utterance) voicegoio.VoiceProfile {
 		return v
 	}
 	if u.Pilot {
-		return e.pool.Assign(u.Callsign, voicegoio.Center) // each crew its own voice
+		return e.pool.AssignCrew(u.Callsign) // each crew its own voice, never a controller's
 	}
 	if u.Controller != "" {
 		// The person on shift, whatever frequency: picked once (as a tower

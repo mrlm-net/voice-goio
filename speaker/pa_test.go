@@ -82,7 +82,9 @@ func TestOneVoiceOneLine(t *testing.T) {
 	if !r2.s.SayIntercom("Cabin crew, seats for landing", alan) || !r2.s.SayPA("Ladies and gentlemen, we are landing", other) {
 		t.Fatal("not queued")
 	}
-	eventually(t, "both played", func() bool { return r2.player(1) != nil && len(r2.player(0).got()) == 1 && len(r2.player(1).got()) == 1 })
+	eventually(t, "both played", func() bool {
+		return r2.player(1) != nil && len(r2.player(0).got()) == 1 && len(r2.player(1).got()) == 1
+	})
 	ic2, pa2 := r2.player(0).got()[0], r2.player(1).got()[0]
 	if d := pa2.at.Sub(ic2.at); d > 300*time.Millisecond || d < -300*time.Millisecond {
 		t.Errorf("different voices waited for each other: %v apart", d)
