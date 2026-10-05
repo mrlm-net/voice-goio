@@ -56,3 +56,30 @@ func TestPAChain(t *testing.T) {
 		t.Errorf("rms 80 Hz %.0f, 1 kHz %.0f, 8 kHz %.0f: not band limited", low, mid, high)
 	}
 }
+
+// One voice says one line at a time across the channels: the same voice on
+// the PA waits for its intercom line; another voice does not.
+func TestOneVoiceOneLine(t *testing.T) {
+	r := newRig(t, fast, Options{})
+	other := alan
+	other.SpeakerID = 7
+	if !r.s.SayIntercom("Cabin crew, seats for landing", alan) || !r.s.SayPA("Ladies and gentlemen, we are landing", alan) {
+		t.Fatal("not queued")
+	}
+	eventually(t, "both played", func() bool { return r.player(1) != nil && len(r.player(0).got()) == 1 && len(r.player(1).got()) == 1 })
+	ic, pa := r.player(0).got()[0], r.player(1).got()[0]
+	icLen := time.Duration(float64(ic.samples) / fakeRate * float64(time.Second))
+	if pa.at.Before(ic.at.Add(icLen - 30*time.Millisecond)) {
+		t.Errorf("same voice: the PA started %v after the intercom line, which lasts %v", pa.at.Sub(ic.at), icLen)
+	}
+
+	r2 := newRig(t, fast, Options{})
+	if !r2.s.SayIntercom("Cabin crew, seats for landing", alan) || !r2.s.SayPA("Ladies and gentlemen, we are landing", other) {
+		t.Fatal("not queued")
+	}
+	eventually(t, "both played", func() bool { return r2.player(1) != nil && len(r2.player(0).got()) == 1 && len(r2.player(1).got()) == 1 })
+	ic2, pa2 := r2.player(0).got()[0], r2.player(1).got()[0]
+	if d := pa2.at.Sub(ic2.at); d > 300*time.Millisecond || d < -300*time.Millisecond {
+		t.Errorf("different voices waited for each other: %v apart", d)
+	}
+}
