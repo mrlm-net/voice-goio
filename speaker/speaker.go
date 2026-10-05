@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand/v2"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -247,6 +248,8 @@ type Speaker struct {
 	ic, pa *lane
 	// devFor: a channel's own output (SetDeviceFor); none: the main one.
 	devFor map[Channel]string
+	// mouths: when each voice (voiceKey) is free again, across the lanes.
+	mouths map[string]time.Time
 
 	openEngine func() (*engine, error)
 	newPlayer  func(device string) (player, []voicegoio.Device, error)
@@ -273,6 +276,7 @@ func newSpeaker(opt Options, t timing) *Speaker {
 		ic:     newLane(ChannelIntercom, IntercomKey),
 		pa:     newLane(ChannelPA, PAKey),
 		devFor: map[Channel]string{},
+		mouths: map[string]time.Time{},
 		atis:   map[string]atisInfo{},
 		rng:    rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x70ce)),
 		done:   make(chan struct{}),
@@ -675,7 +679,23 @@ func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 		pcm = PAChain(pcm, rate)
 	}
 	out := Pad(pcm, rate) // the player converts the rate
-	if !s.sleep(time.Until(next)) {
+	// One voice says one line at a time, whatever the channel: a captain on
+	// the intercom does not make a PA meanwhile, it waits for the line to
+	// end; other voices may overlap. The start is reserved at once, so two
+	// lanes never take the same moment.
+	said := samplesDuration(len(out), rate)
+	s.mu.Lock()
+	start := time.Now()
+	if next.After(start) {
+		start = next
+	}
+	key := voiceKey(voice)
+	if busy := s.mouths[key]; busy.After(start) {
+		start = busy
+	}
+	s.mouths[key] = start.Add(said)
+	s.mu.Unlock()
+	if !s.sleep(time.Until(start)) {
 		return
 	}
 	if s.opt.OnSay != nil {
@@ -684,7 +704,6 @@ func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 	if err := p.Play(voicegoio.Transmission{Frequency: l.key, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, rate); err != nil {
 		return // closed meanwhile
 	}
-	said := samplesDuration(len(out), rate)
 	s.mu.Lock()
 	l.lastEnd = time.Now().Add(said)
 	s.mu.Unlock()
@@ -1064,4 +1083,9 @@ func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time) {
 	l.chimeEnd = l.lastEnd
 	s.mu.Unlock()
 	s.sleep(said - s.t.icGap)
+}
+
+// voiceKey is a voice as one person: its model and speaker.
+func voiceKey(v voicegoio.VoiceProfile) string {
+	return v.Model + "#" + strconv.Itoa(v.SpeakerID)
 }

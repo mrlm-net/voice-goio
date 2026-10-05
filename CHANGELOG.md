@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-10-05
+
+### Fixed
+
+- speaker: one voice says one line at a time across channels. A captain talking to the cabin on the intercom no longer makes a PA at the same moment: a line in the same voice (same model and speaker) waits until that voice's current line ends. Different voices can still overlap, and chimes stay in order on their channel.
+
 ## [0.12.0] — 2026-10-04
 
 ### Added
