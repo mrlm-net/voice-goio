@@ -86,6 +86,11 @@ type Utterance struct {
 	// radio sound. PosATIS utterances are not taken by Hear (the ATIS is a
 	// broadcast: SetATIS); SayOnce says them.
 	Position string
+	// Controller is who works the frequency ("" the position's controller):
+	// the same Controller is the same person, so the same voice, on every
+	// frequency it works (ground and tower combined), with the radio sound
+	// of Position.
+	Controller string
 	// Callsign is the aircraft spoken to or from.
 	Callsign string
 	// Pilot: said by the crew, in Callsign's voice.
@@ -730,6 +735,9 @@ func who(u Utterance) string {
 	if u.Pilot {
 		return u.Callsign
 	}
+	if u.Controller != "" {
+		return u.Controller
+	}
 	return u.Position
 }
 
@@ -889,6 +897,13 @@ func (s *Speaker) voiceOf(e *engine, u Utterance) voicegoio.VoiceProfile {
 	}
 	if u.Pilot {
 		return e.pool.Assign(u.Callsign, voicegoio.Center) // each crew its own voice
+	}
+	if u.Controller != "" {
+		// The person on shift, whatever frequency: picked once (as a tower
+		// voice), heard with the radio sound of the position worked now.
+		v := e.pool.Assign(s.onShift(u.Airport, "controller "+u.Controller)+" "+u.Controller, voicegoio.Tower)
+		v.Radio = string(KindOf(u.Position))
+		return v
 	}
 	return e.pool.Assign(s.onShift(u.Airport, u.Position), KindOf(u.Position))
 }

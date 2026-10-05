@@ -68,9 +68,14 @@ func TestOneVoiceOneLine(t *testing.T) {
 	}
 	eventually(t, "both played", func() bool { return r.player(1) != nil && len(r.player(0).got()) == 1 && len(r.player(1).got()) == 1 })
 	ic, pa := r.player(0).got()[0], r.player(1).got()[0]
-	icLen := time.Duration(float64(ic.samples) / fakeRate * float64(time.Second))
-	if pa.at.Before(ic.at.Add(icLen - 30*time.Millisecond)) {
-		t.Errorf("same voice: the PA started %v after the intercom line, which lasts %v", pa.at.Sub(ic.at), icLen)
+	// Either queue may take the voice first: the other waits for its line.
+	first, second := ic, pa
+	if pa.at.Before(ic.at) {
+		first, second = pa, ic
+	}
+	firstLen := time.Duration(float64(first.samples) / fakeRate * float64(time.Second))
+	if second.at.Before(first.at.Add(firstLen - 30*time.Millisecond)) {
+		t.Errorf("same voice: the second line started %v after the first, which lasts %v", second.at.Sub(first.at), firstLen)
 	}
 
 	r2 := newRig(t, fast, Options{})
