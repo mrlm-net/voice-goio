@@ -393,6 +393,17 @@ func TestShifts(t *testing.T) {
 	if v := r.s.voiceOf(e, Utterance{Airport: "LKPR", Position: PosGround}); v.Model != "LKPR" || v.Radio != string(voicegoio.Ground) {
 		t.Errorf("ground voice %+v", v)
 	}
+	// One controller working ground and tower: one voice, each frequency's
+	// radio sound; another controller another voice.
+	g := r.s.voiceOf(e, Utterance{Airport: "LKPR", Position: PosGround, Controller: "LKPR twr"})
+	tw := r.s.voiceOf(e, Utterance{Airport: "LKPR", Position: PosTower, Controller: "LKPR twr"})
+	other := r.s.voiceOf(e, Utterance{Airport: "LKPR", Position: PosTower, Controller: "LKPR twr2"})
+	if g.Model != tw.Model || g.Radio != string(voicegoio.Ground) || tw.Radio != string(voicegoio.Tower) || other.Model == tw.Model {
+		t.Errorf("controller voices: ground %+v, tower %+v, other %+v", g, tw, other)
+	}
+	if who(Utterance{Position: PosGround, Controller: "LKPR twr"}) != "LKPR twr" {
+		t.Error("who is not the controller")
+	}
 }
 
 func TestKindOf(t *testing.T) {
