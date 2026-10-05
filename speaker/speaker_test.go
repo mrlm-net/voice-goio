@@ -45,6 +45,10 @@ func (f *fakeTTS) said() []string {
 
 type fakePool struct{}
 
+func (f fakePool) AssignCrew(callsign string) voicegoio.VoiceProfile {
+	return f.Assign(callsign, voicegoio.Center)
+}
+
 func (fakePool) Assign(key string, kind voicegoio.ControllerKind) voicegoio.VoiceProfile {
 	return voicegoio.VoiceProfile{Model: key, Radio: string(kind)}
 }

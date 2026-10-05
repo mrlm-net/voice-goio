@@ -242,3 +242,39 @@ func TestFemaleShare(t *testing.T) {
 	}
 	t.Logf("%d of %d positions female (%.1f%%)", female, total, share*100)
 }
+
+// Crews never speak in a controller's voice, before or after the
+// controllers are picked, while the pool has other voices (#29).
+func TestCrewsNeverTakeControllerVoices(t *testing.T) {
+	p := newPool(t)
+	key := func(v voicegoio.VoiceProfile) string { return fmt.Sprintf("%s#%d", v.Model, v.SpeakerID) }
+	crews := map[string]bool{}
+	for i := range 20 {
+		v := p.AssignCrew(fmt.Sprintf("CSA%d", i))
+		crews[key(v)] = true
+		if v.Radio != string(voicegoio.Center) {
+			t.Errorf("crew radio %q", v.Radio)
+		}
+	}
+	for _, icao := range []string{"LKPR", "EDDF", "LOWW"} {
+		for _, k := range []voicegoio.ControllerKind{voicegoio.Ground, voicegoio.Tower, voicegoio.Approach, voicegoio.Center} {
+			if v := p.Assign(icao, k); crews[key(v)] {
+				t.Errorf("%s %s speaks in a crew's voice %s", icao, k, key(v))
+			}
+		}
+	}
+	atc := map[string]bool{}
+	for _, icao := range []string{"LKPR", "EDDF", "LOWW"} {
+		for _, k := range []voicegoio.ControllerKind{voicegoio.Ground, voicegoio.Tower, voicegoio.Approach, voicegoio.Center} {
+			atc[key(p.Assign(icao, k))] = true
+		}
+	}
+	for i := 20; i < 60; i++ {
+		if v := p.AssignCrew(fmt.Sprintf("DLH%d", i)); atc[key(v)] {
+			t.Errorf("crew DLH%d speaks in a controller's voice %s", i, key(v))
+		}
+	}
+	if a, b := p.AssignCrew("CSA1"), p.AssignCrew("CSA1"); a != b {
+		t.Error("a crew's voice changed")
+	}
+}
