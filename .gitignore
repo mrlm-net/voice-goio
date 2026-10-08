@@ -41,3 +41,8 @@ go.work.sum
 
 # The piper binary, fetched not committed
 /bin/
+
+# Doc site build output
+/website/node_modules/
+/website/build/
+/website/.svelte-kit/

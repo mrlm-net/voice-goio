@@ -1,0 +1,11 @@
+@import "tailwindcss";
+@import "./theme.css";
+@plugin "@tailwindcss/typography";
+
+/* voice-goio: amber */
+:root {
+	--brand: #8a6418;
+	--brand-soft: #f4ecdc;
+	--brand-dark: #d4ad66;
+	--brand-soft-dark: #2a2316;
+}
