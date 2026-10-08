@@ -5,7 +5,7 @@ export const siteConfig: SiteConfig = {
     description: 'Offline ATC voice in and out, as a Go library — controller speech through a radio chain, pilot speech to intent tags. No services, no dependencies.',
     repoUrl: 'https://github.com/mrlm-net/voice-goio',
     basePath: '',
-    url: 'https://voice-goio.mrlm.net',
+    url: 'https://goio.mrlm.net',
     ogImage: {
         width: 1200,
         height: 630
