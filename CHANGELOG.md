@@ -7,6 +7,22 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.13.1] — 2026-10-05
+
+### Added
+
+- voices: `Pool.AssignCrew(callsign)`, a crew's voice for the session with a cockpit's radio sound (#29). The pool keeps controller and crew voices apart while either side has one of its own left, so a crew never speaks in a controller's voice. The speaker gives every crew `AssignCrew`.
+
+## [0.13.0] — 2026-10-05
+
+### Added
+
+- speaker: one controller, one voice on every frequency it works (#27). `Utterance.Controller` keys the voice by the person (simconnect #722): ground and tower worked by one controller sound like one person, with the radio sound of each call's `Position`.
+
+### Fixed
+
+- speaker: a racy order in `TestOneVoiceOneLine`.
+
 ## [0.12.1] — 2026-10-05
 
 ### Fixed
