@@ -12,14 +12,16 @@ audio; it hands the application tags.
 
 > [!WARNING]
 > **Under active development, and this README is as much a working notebook as
-> it is documentation.** The API moves, versions come fast, and the two Windows
-> backends have never run against real hardware. Much of what follows is design
-> reasoning and open questions rather than a stable contract. Do not build on it
-> yet unless you are the one building it.
+> it is documentation.** The API is pre-1.0 and versions come fast. The output
+> side (`tts/piper`, `speaker`, `audio` on `winmm`) runs on Windows hardware in
+> two applications; recognition (`stt/sapi`) is not exercised by current
+> consumers and has never run against a live engine. Much of what follows is
+> design reasoning rather than a stable contract.
 
-**v0.5.0** — the platform-independent half is complete and tested; the two
-Windows backends are written and cross-compile but have not yet run against
-real hardware. See [Platform status](#platform-status) before wiring it in.
+**v0.13.1** — the output side is in use on Windows: piper, voice packs, the
+`speaker` with its radio, intercom, PA and chime channels. Recognition on
+Windows is written but untried. See [Platform status](#platform-status) and
+[Using it in an app](#using-it-in-an-app).
 
 - **No services.** Everything runs on the user's PC. Works with the network adapter disabled.
 - **No dependencies.** `go.mod` has zero `require` lines. Standard library only, `CGO_ENABLED=0` everywhere.
@@ -173,6 +175,139 @@ executable by default, with its DLLs, `espeak-ng-data` and
 by default). The speaker writes nothing on Windows, so both can live in a
 read-only install folder.
 
+## Using it in an app
+
+What an application needs to ship voice output: piper, the voice models, a
+voice per station and per crew, and the `speaker`. This is how both current
+consumers (the MyCrew app and the simconnect airport map) use it. The snippets
+compile against v0.13.1.
+
+### Installing piper
+
+Piper is fetched, not bundled. `piper.Install` downloads the pinned Windows
+release (2023.11.14-2), checks its SHA-256 and unzips it to `dir/piper`.
+`piper.DefaultPiperPath()` is `bin/piper/piper.exe` next to the running
+executable, which is what `speaker.Options.PiperPath` defaults to, so
+`dir = <exe dir>/bin` lines the two up. Install does nothing when piper is
+already there.
+
+```go
+if _, err := os.Stat(piper.DefaultPiperPath()); err != nil {
+    exe, _ := os.Executable()
+    err = piper.Install(ctx, filepath.Join(filepath.Dir(exe), "bin"),
+        func(done, total int64) { /* progress bar */ })
+}
+```
+
+An application that keeps piper elsewhere (MyCrew uses its own per-user
+folder) installs there and passes that path as `PiperPath`.
+`(*piper.TTS).Available()` reports whether the binary is present.
+
+### Voice packs
+
+Models go into the per-user folder, `voices.Dir()`
+(`%LOCALAPPDATA%\voice-goio\voices` on Windows). Packs are the sets an
+installer offers: `voices.Packs()` is `core`, `en`, `all`; `voices.PackCore` is
+the default (the English voices the pool uses most plus one accent model per
+country). `InstallPack` checks each model's SHA-256, resumes broken downloads
+and skips what is installed, so it is safe to run again.
+
+```go
+man, _ := voices.LoadDefault()
+for _, p := range voices.Packs() {
+    size, _ := man.PackSize(p) // for a "download 714 MB?" prompt
+}
+err := voices.InstallPack(ctx, voices.PackCore, "", // "" is voices.Dir()
+    func(done, total int64, model string) { /* progress */ })
+
+installed := voices.Installed(man, voices.Dir()) // what is on disk: a voice picker
+```
+
+`man.Pack(name)` lists a pack's models (compare with `Installed` for what is
+missing). For a single model, `voices.Downloader{Dir, OnProgress}` and
+`Fetch(ctx, model)` download one, reporting `voices.Progress` (model, file,
+bytes downloaded, total).
+
+### Assigning voices
+
+The `speaker` does this itself. An application that assigns voices on its own
+uses a `voices.Pool`:
+
+```go
+pool := voices.NewPool(man, voices.PoolOptions{Dir: voices.Dir(), FemaleShare: 1.0 / 9})
+twr := pool.Assign("LKPR", voicegoio.Tower)          // the same voice all session
+gnd := pool.Assign("LKPR", speaker.KindOf("ground")) // never the tower's speaker
+crew := pool.AssignCrew("CSA123")                    // never a controller's voice
+```
+
+- A controller position at an airport keeps its voice, and two positions at
+  the same airport never share one. The speaker hands a position over to a new
+  voice every 30 to 60 minutes (a shift change).
+- **One controller, one voice on every frequency (v0.13.0).** Setting
+  `Utterance.Controller` keys the voice by the person rather than the position:
+  ground and tower worked by one controller sound like one person, with the
+  radio sound of the `Position` each call is made on.
+- **Crews never get a controller's voice (v0.13.1).** `Pool.AssignCrew` keeps
+  a crew's voice for the session, with a cockpit's radio sound, and keeps
+  controller and crew voices apart while either side has a free one. The
+  speaker uses it for every pilot call.
+- `speaker.KindOf(position)` maps a position string to a
+  `voicegoio.ControllerKind` (its voice and radio sound).
+
+### Speaking
+
+```go
+sp := speaker.New(speaker.Options{
+    PiperPath: piperPath, // "" bin/piper/piper.exe next to the executable
+    VoicesDir: "",        // "" voices.Dir()
+    Hint:      "install the voices in Settings",
+})
+defer sp.Close()
+
+sp.Set(true, "118.105") // on, following one frequency
+sp.Hear(speaker.Utterance{Airport: "LKPR", Position: speaker.PosTower, Controller: "LKPR_TWR",
+    Callsign: "CSA123", Frequency: "118.105", Text: "CSA123, runway 24, cleared to land",
+    Phraseology: voicegoio.ICAO}) // voicegoio.FAA at a US airport
+sp.Hear(speaker.Utterance{Airport: "LKPR", Position: speaker.PosTower, Callsign: "CSA123",
+    Pilot: true, Frequency: "118.105", Text: "Cleared to land runway 24, CSA123"})
+
+captain := installed[0].Profile(0)  // a voice the player chose
+sp.SayIntercom("Before start checklist complete", captain)
+sp.Chime(speaker.ChimePA)           // ChimeCall, ChimePA, ChimeSeatbelt
+sp.SayPA("Ladies and gentlemen, welcome aboard", captain)
+sp.SetDeviceFor(speaker.ChannelPA, deviceID) // ChannelRadio, ChannelIntercom, ChannelPA
+
+fmt.Println(sp.State().Status) // "on (piper)", "off", or why it is silent
+```
+
+- **Channels.** The radio (`ChannelRadio`) follows one frequency through the
+  radio chain. The intercom (`ChannelIntercom`) and the cabin PA (`ChannelPA`)
+  are dry or through the cabin speaker chain (`PAChain`), not tied to the
+  frequency, each with its own queue. Each channel can have its own output
+  device (`SetDeviceFor`; `""` follows `SetDevice`). One voice says one line at
+  a time across channels.
+- **Chimes** are generated in code: `Chime(c)` queues one in order on its
+  channel, `Utterance.Chime` does the same through `Hear`, and `ChimePCM(c)` at
+  `ChimeRate` exports the sound.
+- **WAV.** `sp.Clip(u)` renders an utterance in memory without a player (for a
+  client that plays on its own device), and `speaker.WAV(pcm, rate)` makes it a
+  WAV file, which is how the airport map serves audio to its browser clients.
+- `Utterance.Voice` (a `*voicegoio.VoiceProfile`) forces a voice and wins over
+  the pool on every channel.
+
+### Small helpers
+
+- `speaker.SpokenEnd(text)`: ends a call with a full stop, so piper does not
+  cut its last syllable.
+- `normalise.SpokenVariants(spoken)`: every phraseology variant of a spoken
+  callsign ("three" and "tree"), for a recogniser's callsign list.
+- `radio.PeakDBFS(pcm)` / `radio.RMSdBFS(pcm)`: a signal's peak and RMS level in
+  dBFS.
+- `(*audio.Player).Recording()`: the path and length of the session recording,
+  when one is being made.
+- `voices.Load(path)` / `(*voices.Manifest).Save(path)`: read and write a
+  manifest other than the embedded one; `radio.Load(b)` reads radio profiles.
+
 ## What is where
 
 | Path | What it does |
@@ -186,9 +321,14 @@ read-only install folder.
 | `stt/sapi/` | Windows SAPI 5 in-process recognizer over raw COM vtables. |
 | `stt/fake/` | The tag parser plus stdin and script recognisers, for development and regression. |
 | `audio/radio/` | The radio chain: band pass, presence, soft clip, noise, squelch, dropouts, level, resample. |
-| `speaker/` | The radio, heard: voices per position and crew, one frequency, the queue, the gaps, the ATIS broadcast — the rules applications share; the intercom beside it, without the radio. |
-| `audio/` | Per-frequency queues and playback events; `winmm` on Windows, `afplay` on macOS, WAV files elsewhere. |
-| `voices/` | Manifest, downloader, region-weighted voice assignment. |
+| `speaker/` | The radio, heard: voices per position, controller and crew, one frequency, the queue, the gaps, the ATIS broadcast — the rules applications share. Beside it the intercom (dry), the cabin PA (`PAChain`), code-generated chimes (`chime.go`), an output device per channel, and `WAV`/`Clip` for in-memory audio. |
+| `audio/` | Per-frequency queues and playback events; `winmm` on Windows, `afplay` on macOS, WAV files elsewhere, a silent sink for rendering. |
+| `voices/` | Manifest, packs (`core`, `en`, `all`) and `InstallPack`, downloader, `Installed`/`Dir`, region-weighted voice assignment (`Pool.Assign`, `Pool.AssignCrew`). |
+| `tts/piper/install.go` | `piper.Install`: the pinned piper release for Windows, SHA-256 checked. |
+| `internal/dsp` | Signal processing primitives the radio chain is built from: biquads, resampling, level helpers. |
+| `internal/wav` | Read and write 16-bit PCM WAV. |
+| `internal/userdir` | The per-user data folder, so `voices` and `tts/piper` agree on where models live. |
+| `internal/jsonl` | The JSON-lines protocol written to piper's stdin. |
 | `cmd/voicecheck` | Regression and audit CLI. |
 | `cmd/demo` | The whole pipeline, assembled and audible. `-mode arrival` is the full one: four positions, four frequencies, three handoffs, every pilot call recognised. |
 
@@ -197,11 +337,13 @@ read-only install folder.
 | Component | macOS | Windows | Linux |
 |---|---|---|---|
 | normalise, radio chain, voices, grammar parser | ✅ | ✅ | ✅ |
-| TTS | ✅ `say` (dev) + piper | ✅ piper | ✅ piper |
-| Playback | ✅ afplay, default device only | ✅ `winmm`, device selectable | WAV files |
-| Recognition | ✅ `stt/fake` | ✅ `stt/sapi` — **written, not yet bring-up tested on hardware** | `stt/fake` |
+| TTS | ✅ `say` (dev) + piper | ✅ piper, in use in both consumers | ✅ piper |
+| Playback (`audio`, `speaker`) | ✅ afplay, default device only | ✅ `winmm`, device per channel, in use in both consumers | WAV files |
+| Recognition | ✅ `stt/fake` | ⏳ `stt/sapi` — written, **not exercised by current consumers**, never run against a live engine | `stt/fake` |
 
-Two things carry real risk and are called out rather than buried:
+The consumers are the MyCrew app (`mycrew-online/app`, `internal/voice`) and
+the simconnect airport map (`cmd/airport-map`); both run piper, the speaker
+and `winmm` playback on Windows hardware. Neither imports `stt/...`.
 
 - **`stt/sapi` has never run against a live engine.** It is complete — COM
   creation, audio input selection, grammar load, dynamic callsign rule, PTT,
@@ -210,12 +352,11 @@ Two things carry real risk and are called out rather than buried:
   pinned by `layout_windows_test.go`, which runs in CI on `windows-latest`, and
   every failure path returns a typed error. Expect to spend a session on
   bring-up (SPEC.md build order step 6).
-- **`tts/piper` has never run against the real piper binary**, only against
-  `testdata/fakepiper`, which speaks the same protocol. The part to verify
-  first is utterance framing (below) and whether the shipped binary accepts
-  `length_scale` per JSON line (`piper.CheckFlags` reports this).
+- **`tts/piper` runs against the real piper binary** on Windows in both
+  consumers (sentence-at-a-time synthesis since v0.11.1). The tests still run
+  against `testdata/fakepiper`, which speaks the same protocol.
 
-  Verify it on Windows, not on an Apple Silicon Mac. The
+  Do not verify piper on an Apple Silicon Mac. The
   `piper_macos_aarch64.tar.gz` asset of release 2023.11.14-2 contains an
   **x86_64** binary despite its name (`file` says so, and `lipo -archs` agrees).
   Under Rosetta it starts and then hangs indefinitely, producing no output at
@@ -357,9 +498,9 @@ the tag is the whole change.
 | ≥ 95 % intent + callsign on the corpus; off-grammar yields `say_again` | ✅ 34/34 on `stt/fake` (`voicecheck recog`) |
 | Radio profiles audibly distinct; speech intelligible through `center` | ✅ asserted in `audio/radio`, audible via `demo -mode profiles` |
 | macOS output documented as default-device only | ✅ `SetDevice` is a no-op there and says so |
-| Windows output device selection | ⏳ implemented (`winmm`), untested on hardware |
-| Network disabled: full flow on Windows | ⏳ needs SAPI bring-up and a piper install |
-| TTS first sample < 300 ms warm | ⏳ needs the real piper binary to measure |
+| Windows output device selection | ✅ `winmm`, per channel (`SetDeviceFor`), in use in both consumers |
+| Network disabled: full flow on Windows | ⏳ output side runs offline once piper and the models are installed; recognition needs SAPI bring-up (not exercised by current consumers) |
+| TTS first sample < 300 ms warm | ⏳ not measured |
 
 ## Consuming this from an application
 
@@ -374,19 +515,18 @@ the working copy rather than at a tag — a `go.work` beside both checkouts is
 the least intrusive way, because it leaves the app's `go.mod` alone:
 
 ```
-go 1.24
+go 1.27
 
 use (
-    ./msfs-atc-app
+    ./mycrew-online/app // or ./your-app
     ./voice-goio
 )
 ```
 
-Remove it, or drop the `replace`, before a release build. When the library
-settles:
+Remove it, or drop the `replace`, before a release build. Against a tag:
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.5.0
+go get github.com/mrlm-net/voice-goio@v0.13.1
 ```
 
 ### What to wire first
@@ -424,6 +564,19 @@ first build.
 | `v0.3.0` | Departure clearance readbacks, WAV input for the Windows recogniser so the corpus runs unattended, and a fix for models downloading into the working directory. |
 | `v0.4.0` | Business Source License 1.1 (non-commercial; Apache-2.0 four years after each release). Taxiway letters after "via" are spelled. |
 | `v0.5.0` | `speaker`: the radio as applications speak it (voices per position and crew, one frequency, the queue, gaps, the ATIS broadcast). Female share in the voice pool; piper sentinel cut at its silence. |
+| `v0.6.0` | The intercom, explicit voices (`Utterance.Voice`), `voices.Dir`/`Installed`, application grammars (`grammar.Commands`). |
+| `v0.7.0` | The Czech controller voice through RP phonemes; `speaker.Options.Exclude`. |
+| `v0.7.1` | Every accent model reads English through RP phonemes. |
+| `v0.8.0` | Voice packs (`en`, `all`) and `Manifest.WritePack`. |
+| `v0.9.0` | Controller accents opt-in (`speaker.Options.Accents`, off by default). |
+| `v0.10.0` | `PackCore`, an installer's default pack. |
+| `v0.11.0` | `voices.InstallPack`, `Manifest.PackSize`, `piper.Install`. |
+| `v0.11.1` | Fix: piper says a text of several sentences whole. |
+| `v0.11.2` | Cabin chimes on the intercom. |
+| `v0.12.0` | An output device per channel; the cabin PA channel and `PAChain`. |
+| `v0.12.1` | Fix: one voice says one line at a time across channels. |
+| `v0.13.0` | One controller, one voice on every frequency it works (`Utterance.Controller`). |
+| `v0.13.1` | `Pool.AssignCrew`: crews never speak in a controller's voice. |
 
 Versions describe what changed, not what is planned. SPEC.md §5 earmarked
 `v0.2.0` for the Windows bring-up; that number went to an earlier release

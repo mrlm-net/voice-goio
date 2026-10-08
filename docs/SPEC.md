@@ -1,5 +1,12 @@
 # voice-goio — Offline Voice I/O Library for an MSFS ATC App (Agent Brief / SPEC.md)
 
+> [!NOTE]
+> **Historic: the original design spec.** It is kept for its reasoning and the
+> acceptance criteria the README refers to (§4, §9). The repository layout and
+> the version plan below are outdated (packages such as `speaker`, voice packs
+> and `piper.Install` came later). The [README](../README.md) and the
+> [CHANGELOG](../CHANGELOG.md) are current.
+
 ## 0. Goal
 
 `voice-goio` is a standalone Go library providing voice input (pilot → ATC) and voice output (ATC → pilot) for an existing Go application that controls traffic in MSFS 2020/2024. The app imports it as a versioned module; the library knows nothing about MSFS or SimConnect.
