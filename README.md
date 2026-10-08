@@ -1,5 +1,9 @@
 # voice-goio
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/mrlm-net/voice-goio.svg)](https://pkg.go.dev/github.com/mrlm-net/voice-goio)
+[![Docs](https://img.shields.io/badge/docs-goio.mrlm.net-8a6418)](https://goio.mrlm.net/)
+[![License: BSL 1.1 · non-commercial](https://img.shields.io/badge/license-BSL%201.1%20%C2%B7%20non--commercial-6c7480)](LICENSE)
+
 Offline ATC voice input and output, as a Go library.
 
 Controller speech out, pilot speech in, for any application that needs a radio:

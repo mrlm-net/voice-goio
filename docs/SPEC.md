@@ -1,3 +1,10 @@
+---
+title: Design Spec (historic)
+description: The original design brief, kept for its reasoning and the acceptance criteria the docs refer to.
+order: 40
+section: reference
+---
+
 # voice-goio — Offline Voice I/O Library for an MSFS ATC App (Agent Brief / SPEC.md)
 
 > [!NOTE]
