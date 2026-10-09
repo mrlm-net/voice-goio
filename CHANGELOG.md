@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-10-09
+
+### Added
+
+- `speaker.Utterance.Tempo`: how fast it is said against the voice's own pace (1 or 0 as the voice speaks, above 1 faster), kept within `MinTempo` (0.8) and `MaxTempo` (1.35); it scales the voice's `LengthScale`. For a busy frequency or an urgent call (#34).
+
 ## [0.13.1] — 2026-10-05
 
 ### Added

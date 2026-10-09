@@ -122,7 +122,19 @@ type Utterance struct {
 	// PA: said on the cabin PA (SayPA): its own queue and player, through
 	// the cabin speaker chain (PAChain); not tied to the frequency.
 	PA bool
+	// Tempo is how fast it is said against the voice's own pace: 1 (or 0)
+	// as the voice speaks, above 1 faster (a busy frequency, an urgent
+	// call), below 1 slower; kept within MinTempo…MaxTempo. It scales the
+	// voice's LengthScale.
+	Tempo float32
 }
+
+// MinTempo and MaxTempo bound Utterance.Tempo: faster than MaxTempo is no
+// longer clear on the radio.
+const (
+	MinTempo = 0.8
+	MaxTempo = 1.35
+)
 
 // Options configures a Speaker.
 type Options struct {
@@ -886,6 +898,20 @@ func (s *Speaker) wait(d time.Duration, freq string, p player) bool {
 // voiceOf is the voice u is said in: its own (Voice), the crew's, or the
 // controller on shift at the position.
 func (s *Speaker) voiceOf(e *engine, u Utterance) voicegoio.VoiceProfile {
+	v := s.voiceAt(e, u)
+	if t := u.Tempo; t > 0 && t != 1 {
+		t = min(max(t, MinTempo), MaxTempo)
+		ls := v.LengthScale
+		if ls <= 0 {
+			ls = 1 // piper's default pace
+		}
+		v.LengthScale = ls / t
+	}
+	return v
+}
+
+// voiceAt is voiceOf at the voice's own pace.
+func (s *Speaker) voiceAt(e *engine, u Utterance) voicegoio.VoiceProfile {
 	if u.Voice != nil {
 		v := *u.Voice
 		if v.Radio == "" {
