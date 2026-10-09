@@ -582,6 +582,7 @@ first build.
 | `v0.13.0` | One controller, one voice on every frequency it works (`Utterance.Controller`). |
 | `v0.13.1` | `Pool.AssignCrew`: crews never speak in a controller's voice. |
 | `v0.14.0` | `Utterance.Tempo`: speaking rate per utterance (a busy frequency, an urgent call), within `MinTempo`…`MaxTempo`. |
+| `v0.15.0` | `Options.OneAtATime`: the radio, intercom and PA take turns, one utterance at a time (radio first, ATIS last). |
 
 Versions describe what changed, not what is planned. SPEC.md §5 earmarked
 `v0.2.0` for the Windows bring-up; that number went to an earlier release

@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-10-09
+
+### Added
+
+- `speaker.Options.OneAtATime`: the radio, the intercom and the PA take turns. One utterance plays at a time and the others wait for it to end, never cutting it; among those waiting the radio goes first, then the intercom, then the PA, and the ATIS broadcast after them all. After a chime its lane keeps the floor a moment, so its PA or answer follows it. Off by default (each channel on its own, as before): the MyCrew app's player heard "too many voices at once".
+
 ## [0.14.0] — 2026-10-09
 
 ### Added
