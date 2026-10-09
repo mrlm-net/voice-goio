@@ -3,6 +3,7 @@ package speaker
 import (
 	"context"
 	"errors"
+	"math"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -459,4 +460,23 @@ func (p *fakePlayer) dev() string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	return p.device
+}
+
+// Tempo speeds a voice up (a lower LengthScale) within MinTempo…MaxTempo;
+// 0 and 1 leave its pace.
+func TestVoiceTempo(t *testing.T) {
+	r := newRig(t, fast, Options{})
+	e, _ := r.s.openEngine()
+	u := Utterance{Airport: "LKPR", Position: PosTower}
+	base := r.s.voiceOf(e, u)
+	ls := base.LengthScale
+	if ls <= 0 {
+		ls = 1
+	}
+	for _, c := range []struct{ tempo, want float32 }{{0, base.LengthScale}, {1, base.LengthScale}, {1.25, ls / 1.25}, {3, ls / MaxTempo}} {
+		u.Tempo = c.tempo
+		if got := r.s.voiceOf(e, u).LengthScale; math.Abs(float64(got-c.want)) > 1e-4 {
+			t.Errorf("tempo %.2f: length scale %.3f, want %.3f", c.tempo, got, c.want)
+		}
+	}
 }

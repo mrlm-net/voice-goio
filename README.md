@@ -581,6 +581,7 @@ first build.
 | `v0.12.1` | Fix: one voice says one line at a time across channels. |
 | `v0.13.0` | One controller, one voice on every frequency it works (`Utterance.Controller`). |
 | `v0.13.1` | `Pool.AssignCrew`: crews never speak in a controller's voice. |
+| `v0.14.0` | `Utterance.Tempo`: speaking rate per utterance (a busy frequency, an urgent call), within `MinTempo`…`MaxTempo`. |
 
 Versions describe what changed, not what is planned. SPEC.md §5 earmarked
 `v0.2.0` for the Windows bring-up; that number went to an earlier release
