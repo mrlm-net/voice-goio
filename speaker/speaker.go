@@ -164,6 +164,14 @@ type Options struct {
 	OnSay func(Utterance)
 	// Logf logs synthesis errors; nil log.Printf.
 	Logf func(format string, args ...any)
+	// OneAtATime has the radio, the intercom and the PA take turns: one
+	// utterance plays at a time and the others wait for it to end, never
+	// cutting it. Among those waiting the radio goes first, then the
+	// intercom, then the PA; the ATIS broadcast waits for them all. A chime
+	// is followed by its own PA or answer. Off: each channel plays on its
+	// own, as real radios and cabins do (a PA over the radio), which a
+	// player hears as too many voices at once.
+	OneAtATime bool
 }
 
 // State is what a UI shows of the speaker.
@@ -240,6 +248,8 @@ type Speaker struct {
 	opt Options
 	t   timing
 
+	floor *floor // Options.OneAtATime: one utterance at a time; nil off
+
 	mu      sync.Mutex
 	on      bool
 	freq    string // followed; "" nothing is said
@@ -288,7 +298,12 @@ func newSpeaker(opt Options, t timing) *Speaker {
 	if opt.Logf == nil {
 		opt.Logf = log.Printf
 	}
+	var fl *floor
+	if opt.OneAtATime {
+		fl = newFloor()
+	}
 	return &Speaker{
+		floor: fl,
 		opt: opt, t: t, status: "off", device: opt.Device,
 		queue:  make(chan item, 64),
 		ic:     newLane(ChannelIntercom, IntercomKey),
@@ -716,6 +731,10 @@ func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 	if !s.sleep(time.Until(start)) {
 		return
 	}
+	if !s.take(lanePrio(l.ch)) { // one at a time (OneAtATime)
+		return
+	}
+	defer s.give(0)
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
@@ -855,6 +874,10 @@ func (s *Speaker) broadcast(airport, freq, text string) {
 		s.atisText, s.atisPCM, s.atisStart = text, out, time.Now()
 		s.mu.Unlock()
 	}
+	if !s.take(prioATIS) { // one at a time (OneAtATime): after all others
+		return
+	}
+	defer s.give(0)
 	s.mu.Lock()
 	out, start := s.atisPCM, s.atisStart
 	s.mu.Unlock()
@@ -969,6 +992,10 @@ func (s *Speaker) say(u Utterance, force bool) {
 	if wait > 0 && !s.wait(wait, freq, p) {
 		return // another frequency meanwhile
 	}
+	if !s.take(prioRadio) { // one at a time (OneAtATime): after the one playing
+		return
+	}
+	defer s.give(0)
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
@@ -1105,6 +1132,12 @@ func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time) {
 	if !s.sleep(time.Until(next)) {
 		return
 	}
+	if !s.take(lanePrio(l.ch)) { // one at a time (OneAtATime)
+		return
+	}
+	// Its PA or answer next: the floor kept for this lane a moment more.
+	keep := chimeKeep
+	defer func() { s.give(keep) }()
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
