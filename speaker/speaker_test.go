@@ -94,6 +94,7 @@ type fakePlayer struct {
 	plays  []play
 	closed bool
 	device string
+	gain   float64
 }
 
 func (p *fakePlayer) Play(t voicegoio.Transmission, pcm []int16, _ int) error {
@@ -106,6 +107,11 @@ func (p *fakePlayer) Play(t voicegoio.Transmission, pcm []int16, _ int) error {
 	return nil
 }
 func (p *fakePlayer) SampleRate() int { return fakeRate }
+func (p *fakePlayer) SetGain(g float64) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.gain = g
+}
 func (p *fakePlayer) SetDevice(id string) error {
 	p.mu.Lock()
 	p.device = id
@@ -478,5 +484,37 @@ func TestVoiceTempo(t *testing.T) {
 		if got := r.s.voiceOf(e, u).LengthScale; math.Abs(float64(got-c.want)) > 1e-4 {
 			t.Errorf("tempo %.2f: length scale %.3f, want %.3f", c.tempo, got, c.want)
 		}
+	}
+}
+
+// SetGain: a channel's volume reaches its player when it opens, and at
+// once when it is open; another channel stays at full; out-of-range values
+// are clamped.
+func TestSetGain(t *testing.T) {
+	r := newRig(t, fast, Options{})
+	r.s.SetGain(ChannelIntercom, 0.4) // before the intercom opens
+	if !r.s.SayIntercom("Before start checklist", alan) {
+		t.Fatal("intercom refused")
+	}
+	ic := r.player(0)
+	ic.mu.Lock()
+	g := ic.gain
+	ic.mu.Unlock()
+	if g != 0.4 {
+		t.Errorf("intercom player opened at %v", g)
+	}
+	r.s.SetGain(ChannelIntercom, 1.7) // open now: at once, clamped
+	ic.mu.Lock()
+	g = ic.gain
+	ic.mu.Unlock()
+	if g != 1 || r.s.Gain(ChannelIntercom) != 1 {
+		t.Errorf("intercom gain %v, read %v", g, r.s.Gain(ChannelIntercom))
+	}
+	if r.s.Gain(ChannelRadio) != 1 || r.s.Gain(ChannelPA) != 1 {
+		t.Error("other channels not at full")
+	}
+	r.s.SetGain(ChannelPA, -1)
+	if r.s.Gain(ChannelPA) != 0 {
+		t.Errorf("PA %v, want muted", r.s.Gain(ChannelPA))
 	}
 }

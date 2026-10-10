@@ -8,7 +8,9 @@ package audio
 
 import (
 	"fmt"
+	"math"
 	"sync"
+	"sync/atomic"
 
 	voicegoio "github.com/mrlm-net/voice-goio"
 	"github.com/mrlm-net/voice-goio/internal/dsp"
@@ -28,8 +30,9 @@ const DefaultDevice = ""
 type sink interface {
 	devices() ([]voicegoio.Device, error)
 	open(deviceID string, sampleRate int) error
-	// write blocks until the samples have been played.
-	write(pcm []int16) error
+	// write blocks until the samples have been played, each part at the
+	// gain gain() gives as it goes to the device (0…1).
+	write(pcm []int16, gain func() float64) error
 	close() error
 	// selectable reports whether this platform can route to a chosen device.
 	selectable() bool
@@ -88,6 +91,8 @@ type Player struct {
 	wg      sync.WaitGroup
 	done    chan struct{}
 	closed  bool
+	// gain: the volume 0…1 (float64 bits), applied as the audio goes out.
+	gain atomic.Uint64
 }
 
 // NewPlayer opens the output device.
@@ -123,6 +128,7 @@ func NewPlayer(opts Options) (*Player, error) {
 		events: make(chan voicegoio.PlaybackEvent, 128),
 		done:   make(chan struct{}),
 	}
+	p.gain.Store(math.Float64bits(1))
 	if opts.RecordPath != "" {
 		w, err := wav.Create(opts.RecordPath, rate)
 		if err != nil {
@@ -230,7 +236,7 @@ func (p *Player) serve(q chan item) {
 				}
 				// The device write is serialised by the sink itself; only one
 				// frequency is audible at a time.
-				_ = s.write(pcm)
+				_ = s.write(pcm, p.Gain)
 			}
 			p.emit(voicegoio.PlaybackEvent{Frequency: it.t.Frequency, ControllerID: it.t.ControllerID, Started: false})
 		}
@@ -277,3 +283,29 @@ func (p *Player) Close() error {
 }
 
 var _ voicegoio.Player = (*Player)(nil)
+
+// SetGain sets the volume, 0 (muted) to 1 (as given), clamped. It applies
+// to what is playing as it goes to the device (the next part, about 0.1 s
+// on Windows) and to everything after. A session recording keeps the
+// audio as given.
+func (p *Player) SetGain(g float64) {
+	if math.IsNaN(g) {
+		g = 1
+	}
+	p.gain.Store(math.Float64bits(min(max(g, 0), 1)))
+}
+
+// Gain is the volume SetGain set (1 by default).
+func (p *Player) Gain() float64 { return math.Float64frombits(p.gain.Load()) }
+
+// scaled is pcm at gain g (pcm itself at 1).
+func scaled(pcm []int16, g float64) []int16 {
+	if g >= 1 {
+		return pcm
+	}
+	out := make([]int16, len(pcm))
+	for i, s := range pcm {
+		out[i] = int16(float64(s) * g)
+	}
+	return out
+}

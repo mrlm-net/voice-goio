@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"math/rand/v2"
 	"strconv"
 	"strings"
@@ -212,6 +213,7 @@ type (
 		Play(t voicegoio.Transmission, pcm []int16, sampleRate int) error
 		SampleRate() int
 		SetDevice(id string) error
+		SetGain(g float64)
 		Close() error
 	}
 )
@@ -276,6 +278,8 @@ type Speaker struct {
 	ic, pa *lane
 	// devFor: a channel's own output (SetDeviceFor); none: the main one.
 	devFor map[Channel]string
+	// gains: a channel's volume (SetGain); none: 1.
+	gains map[Channel]float64
 	// mouths: when each voice (voiceKey) is free again, across the lanes.
 	mouths map[string]time.Time
 
@@ -304,11 +308,12 @@ func newSpeaker(opt Options, t timing) *Speaker {
 	}
 	return &Speaker{
 		floor: fl,
-		opt: opt, t: t, status: "off", device: opt.Device,
+		opt:   opt, t: t, status: "off", device: opt.Device,
 		queue:  make(chan item, 64),
 		ic:     newLane(ChannelIntercom, IntercomKey),
 		pa:     newLane(ChannelPA, PAKey),
 		devFor: map[Channel]string{},
+		gains:  map[Channel]float64{},
 		mouths: map[string]time.Time{},
 		atis:   map[string]atisInfo{},
 		rng:    rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x70ce)),
@@ -369,6 +374,7 @@ func (s *Speaker) open() error {
 			s.devices = d
 		}
 		s.player = p
+		p.SetGain(s.gainOf(ChannelRadio))
 	}
 	return nil
 }
@@ -658,6 +664,7 @@ func (s *Speaker) openLaneLocked(l *lane, voice bool) error {
 			s.devices = d
 		}
 		l.player = p
+		p.SetGain(s.gainOf(l.ch))
 	}
 	return nil
 }
@@ -1163,4 +1170,36 @@ func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time) {
 // voiceKey is a voice as one person: its model and speaker.
 func voiceKey(v voicegoio.VoiceProfile) string {
 	return v.Model + "#" + strconv.Itoa(v.SpeakerID)
+}
+
+// SetGain sets channel ch's volume, 0 (muted) to 1 (full), clamped: for
+// the cockpit's audio panel (a receive key off is 0). It applies to what
+// is playing on the channel at once (within about 0.1 s), chimes included,
+// and to the channel's player when it opens later.
+func (s *Speaker) SetGain(ch Channel, gain float64) {
+	if math.IsNaN(gain) {
+		gain = 1
+	}
+	gain = min(max(gain, 0), 1)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.gains[ch] = gain
+	if p := s.playerOf(ch); p != nil {
+		p.SetGain(gain)
+	}
+}
+
+// Gain is channel ch's volume (SetGain; 1 when never set).
+func (s *Speaker) Gain(ch Channel) float64 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.gainOf(ch)
+}
+
+// gainOf is ch's volume; s.mu held.
+func (s *Speaker) gainOf(ch Channel) float64 {
+	if g, ok := s.gains[ch]; ok {
+		return g
+	}
+	return 1
 }

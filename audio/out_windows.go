@@ -184,7 +184,7 @@ func (s *winSink) open(deviceID string, sampleRate int) error {
 
 // write plays pcm, alternating between the two prepared buffers so the device
 // is never starved between chunks.
-func (s *winSink) write(pcm []int16) error {
+func (s *winSink) write(pcm []int16, gain func() float64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.open_ {
@@ -202,7 +202,11 @@ func (s *winSink) write(pcm []int16) error {
 		end := min(off+s.chunk, len(pcm))
 		n := end - off
 		b := s.bufs[i]
+		g := gain() // per chunk: a knob turned is heard within one
 		for j, sample := range pcm[off:end] {
+			if g < 1 {
+				sample = int16(float64(sample) * g)
+			}
 			b[j*2] = byte(uint16(sample))
 			b[j*2+1] = byte(uint16(sample) >> 8)
 		}
