@@ -7,6 +7,13 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-10-10
+
+### Added
+
+- `speaker.Speaker.SetGain(ch, gain)` and `Gain(ch)`: a volume per channel (radio, intercom, PA), 0 muted to 1 full, clamped. It applies at once to what is playing on the channel, chimes included (the next part sent to the device, about 0.1 s on Windows), and to the channel's player when it opens later. For a cockpit audio panel: the MyCrew app sets each channel from the aircraft's volume knob and receive key.
+- `audio.Player.SetGain` and `Gain`: the player's volume, applied as the audio goes to the device; a session recording keeps the audio as given.
+
 ## [0.15.0] — 2026-10-09
 
 ### Added
