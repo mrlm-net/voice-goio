@@ -496,6 +496,8 @@ func TestSetGain(t *testing.T) {
 	if !r.s.SayIntercom("Before start checklist", alan) {
 		t.Fatal("intercom refused")
 	}
+	// Said and played before the test ends (the lane logs after a close).
+	eventually(t, "said", func() bool { return r.player(0) != nil && len(r.player(0).got()) == 1 })
 	ic := r.player(0)
 	ic.mu.Lock()
 	g := ic.gain
