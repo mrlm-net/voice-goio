@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.16.1] — 2026-10-11
+
+### Changed
+
+- Website: docs pages use the full width between the sidebar and the table of contents (no 52rem or 65ch cap on the main content), which looked poor on laptop screens.
+
 ## [0.16.0] — 2026-10-10
 
 ### Added
