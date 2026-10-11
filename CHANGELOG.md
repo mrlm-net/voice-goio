@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.16.2] — 2026-10-11
+
+### Changed
+
+- Website: the home page carries social metadata (Open Graph and Twitter card), so shared links show a title, description and preview image.
+
 ## [0.16.1] — 2026-10-11
 
 ### Changed
