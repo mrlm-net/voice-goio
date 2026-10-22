@@ -27,7 +27,7 @@ pilot speech ─▶ STT ─▶ Recognition{intent, callsign, value} ─▶ app
 Requires Go 1.27 or newer.
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.13.1
+go get github.com/mrlm-net/voice-goio@latest
 ```
 
 Most applications only need the [`speaker`](speaker.md) package, plus [piper and a voice pack](piper-and-voices.md) installed on the user's machine. [Integrating](integrating.md) covers developing the library and an application side by side.

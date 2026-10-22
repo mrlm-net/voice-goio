@@ -8,7 +8,7 @@ section: integration
 ## Adding it
 
 ```bash
-go get github.com/mrlm-net/voice-goio@v0.13.1
+go get github.com/mrlm-net/voice-goio@latest
 ```
 
 Requires Go 1.27 or newer. The `go` directive in `go.mod` is a floor on the consumer's toolchain, not a target, so it is set to the version the library is actually developed and tested on. A machine on an older toolchain will fetch 1.27 automatically on the first build.
@@ -57,6 +57,11 @@ Remove it, or drop the `replace`, before a release build.
 | `v0.12.1` | Fix: one voice says one line at a time across channels. |
 | `v0.13.0` | One controller, one voice on every frequency it works (`Utterance.Controller`). |
 | `v0.13.1` | `Pool.AssignCrew`: crews never speak in a controller's voice. |
+| `v0.14.0` | `Utterance.Tempo`: speaking rate per utterance (a busy frequency, an urgent call), within `MinTempo`…`MaxTempo`. |
+| `v0.15.0` | `Options.OneAtATime`: the radio, intercom and PA take turns, one utterance at a time (radio first, ATIS last). |
+| `v0.16.0` | `Speaker.SetGain` and `Gain`: a volume per channel (radio, intercom, PA) 0…1, applied to what is playing within about 0.1 s; `audio.Player.SetGain` and `Gain`. |
+| `v0.16.1` | Docs website: pages use the full width (no main-content cap). |
+| `v0.16.2` | Docs website: social metadata and preview image on the home page. |
 
 The full notes are in the [changelog](/docs/changelog).
 

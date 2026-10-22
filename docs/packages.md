@@ -24,7 +24,7 @@ section: reference
 | `internal/wav` | Read and write 16-bit PCM WAV. |
 | `internal/userdir` | The per-user data folder, so `voices` and `tts/piper` agree on where models live. |
 | `internal/jsonl` | The JSON-lines protocol written to piper's stdin. |
-| `cmd/voicecheck` | Regression and audit CLI. |
+| `cmd/voicecheck` | Regression and audit CLI; see [voicecheck CLI](voicecheck.md). |
 | `cmd/demo` | The whole pipeline, assembled and audible. `-mode arrival` is the full one: four positions, four frequencies, three handoffs, every pilot call recognised. |
 
 ## The compatibility surface

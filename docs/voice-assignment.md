@@ -19,7 +19,14 @@ crew := pool.AssignCrew("CSA123")                    // never a controller's voi
 - **A position keeps its voice.** A controller position at an airport keeps its voice, and two positions at the same airport never share one. The speaker hands a position over to a new voice every 30 to 60 minutes (a shift change).
 - **One controller, one voice on every frequency** (v0.13.0). Setting `Utterance.Controller` keys the voice by the person rather than the position: ground and tower worked by one controller sound like one person, with the radio sound of the `Position` each call is made on.
 - **Crews never get a controller's voice** (v0.13.1). `Pool.AssignCrew` keeps a crew's voice for the session, with a cockpit's radio sound, and keeps controller and crew voices apart while either side has a free one. The speaker uses it for every pilot call.
-- **Regional.** Assignment is region-weighted; `Assign` records the accent it chose on `VoiceProfile.Accent`. Controller accents in the speaker are opt-in (`speaker.Options.Accents`, off by default).
+- **Regional.** Assignment is region-weighted; `Assign` records the accent it chose on `VoiceProfile.Accent`. Controller accents in the speaker are opt-in (`speaker.Options.Accents`, off by default). `voices.AccentModels(man)` lists the models that read English through another language's voice (the controller accents).
+- **Positions close.** `pool.Release(icaoPrefix, kind)` forgets an assignment when a controller position closes, so the voice is free again.
+
+## The pool's other methods
+
+- `pool.Count()` is how many voices are assignable (the design spec sets a floor of 100 on it; `voicecheck voices` prints it).
+- `pool.Missing()` reports the models that have not been downloaded.
+- `pool.Resolve(model)` implements `piper.Resolver`: it turns a model name into the `.onnx` and config file pair piper is launched with, writing the swap-trick config when the model has an espeak override (see [Piper and voices](piper-and-voices.md#accents)).
 
 ## The ATIS
 

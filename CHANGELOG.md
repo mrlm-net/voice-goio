@@ -7,44 +7,44 @@ compatibility surface.
 
 ## [Unreleased]
 
-## [0.16.2] — 2026-10-11
+## [0.16.2] - 2026-10-11
 
 ### Changed
 
 - Website: the home page carries social metadata (Open Graph and Twitter card), so shared links show a title, description and preview image.
 
-## [0.16.1] — 2026-10-11
+## [0.16.1] - 2026-10-11
 
 ### Changed
 
 - Website: docs pages use the full width between the sidebar and the table of contents (no 52rem or 65ch cap on the main content), which looked poor on laptop screens.
 
-## [0.16.0] — 2026-10-10
+## [0.16.0] - 2026-10-10
 
 ### Added
 
 - `speaker.Speaker.SetGain(ch, gain)` and `Gain(ch)`: a volume per channel (radio, intercom, PA), 0 muted to 1 full, clamped. It applies at once to what is playing on the channel, chimes included (the next part sent to the device, about 0.1 s on Windows), and to the channel's player when it opens later. For a cockpit audio panel: the MyCrew app sets each channel from the aircraft's volume knob and receive key.
 - `audio.Player.SetGain` and `Gain`: the player's volume, applied as the audio goes to the device; a session recording keeps the audio as given.
 
-## [0.15.0] — 2026-10-09
+## [0.15.0] - 2026-10-09
 
 ### Added
 
 - `speaker.Options.OneAtATime`: the radio, the intercom and the PA take turns. One utterance plays at a time and the others wait for it to end, never cutting it; among those waiting the radio goes first, then the intercom, then the PA, and the ATIS broadcast after them all. After a chime its lane keeps the floor a moment, so its PA or answer follows it. Off by default (each channel on its own, as before): the MyCrew app's player heard "too many voices at once".
 
-## [0.14.0] — 2026-10-09
+## [0.14.0] - 2026-10-09
 
 ### Added
 
 - `speaker.Utterance.Tempo`: how fast it is said against the voice's own pace (1 or 0 as the voice speaks, above 1 faster), kept within `MinTempo` (0.8) and `MaxTempo` (1.35); it scales the voice's `LengthScale`. For a busy frequency or an urgent call (#34).
 
-## [0.13.1] — 2026-10-05
+## [0.13.1] - 2026-10-05
 
 ### Added
 
 - voices: `Pool.AssignCrew(callsign)`, a crew's voice for the session with a cockpit's radio sound (#29). The pool keeps controller and crew voices apart while either side has one of its own left, so a crew never speaks in a controller's voice. The speaker gives every crew `AssignCrew`.
 
-## [0.13.0] — 2026-10-05
+## [0.13.0] - 2026-10-05
 
 ### Added
 
@@ -54,13 +54,13 @@ compatibility surface.
 
 - speaker: a racy order in `TestOneVoiceOneLine`.
 
-## [0.12.1] — 2026-10-05
+## [0.12.1] - 2026-10-05
 
 ### Fixed
 
 - speaker: one voice says one line at a time across channels. A captain talking to the cabin on the intercom no longer makes a PA at the same moment: a line in the same voice (same model and speaker) waits until that voice's current line ends. Different voices can still overlap, and chimes stay in order on their channel.
 
-## [0.12.0] — 2026-10-04
+## [0.12.0] - 2026-10-04
 
 ### Added
 
@@ -68,57 +68,57 @@ compatibility surface.
 - speaker: a cabin PA channel. `SayPA(text, voice)` speaks on its own queue and player, in order with itself and independent of the intercom, so a PA and an intercom call can overlap. `Chime(ChimePA)` now plays on the PA. `Utterance.PA` queues on the PA too, and `Clip` renders a PA through the cabin chain.
 - speaker: `PAChain`, a light cabin-speaker sound: band-limited to about 300 Hz–4 kHz, with two early reflections; no noise or squelch.
 
-## [0.11.2] — 2026-10-04
+## [0.11.2] - 2026-10-04
 
 ### Added
 
 - speaker: cabin chimes on the intercom, generated in code with no files. `Chime(ChimeCall | ChimePA | ChimeSeatbelt)` queues one in order with `SayIntercom`. `ChimeCall` is the two-tone call, `ChimePA` a single soft ding before a PA, `ChimeSeatbelt` the seat-belt bong. After a call chime the next intercom item waits a pickup (`PickupMin` + up to `PickupJitter`, 1.5–3 s). `Utterance.Chime` queues a chime the same way, `Clip` renders one, and `ChimePCM` / `ChimeRate` export the sound. A chime needs no voice model.
 
-## [0.11.1] — 2026-10-04
+## [0.11.1] - 2026-10-04
 
 ### Fixed
 
 - tts/piper: a text of several sentences is said whole. Piper writes each sentence's audio once it is computed, and the pause while it computes the next one is longer than the idle gap, so only the first sentence was returned (a passenger announcement cut after its first sentence). The text is now said a sentence at a time, joined with piper's 0.2 s sentence silence (#22).
 
-## [0.11.0] — 2026-10-04
+## [0.11.0] - 2026-10-04
 
 ### Added
 
 - voices: `InstallPack(ctx, pack, dir, progress)` downloads a pack's models, each checked against its SHA-256, resuming and skipping what is installed and valid; `Manifest.PackSize(pack)` its download size (core 714 MB, en 1031 MB, all 1542 MB); the manifest records every model's SHA-256 and `size`.
 - tts/piper: `Install(ctx, dir, progress)` downloads piper 2023.11.14-2 for Windows (rhasspy/piper, MIT), checks its pinned SHA-256 and unzips it to dir/piper — the layout the speaker defaults to.
 
-## [0.10.0] — 2026-10-04
+## [0.10.0] - 2026-10-04
 
 ### Added
 
 - voices: `PackCore` ("core"), an installer's default: the English voices the pool mostly uses (en_GB-alan, en_GB-vctk, en_US-lessac, en_US-ryan) and one controller accent model per country (cs_CZ-jirka, de_DE-mls, fr_FR-mls, nl_NL-mls, pl_PL-mls, it_IT-riccardo, es_ES-mls): 11 models, 702 MB as a zip. "en" (15 models, 1.02 GB) and "all" (23, 1.52 GB) stay as optional downloads.
 
-## [0.9.0] — 2026-10-04
+## [0.9.0] - 2026-10-04
 
 ### Changed
 
 - speaker: the controller accents are opt-in, `Options.Accents` (off by default): English voices only unless asked, until the accent models are trained for English. `voices.AccentModels` lists them.
 
-## [0.8.0] — 2026-10-04
+## [0.8.0] - 2026-10-04
 
 ### Added
 
 - voices: voice packs (#17). `Manifest.Pack(name)`: `PackEnglish` ("en", every English model) and `PackAll` ("all", with the accent models); `Manifest.WritePack` zips a pack of the installed models with a manifest of just them, for an installer (unpacked into the voices folder). voicecheck: `download -pack en|all` and `pack -pack en|all -out file.zip`. Today: English 15 models, 1.02 GB; all 23, 1.52 GB.
 
-## [0.7.1] — 2026-10-04
+## [0.7.1] - 2026-10-04
 
 ### Changed
 
 - voices: every accent model (German thorsten and MLS, Dutch, Polish, French, Italian, Spanish) reads English through RP phonemes like the Czech one: the words as every English voice says them, the accent in the voice. At a German, Dutch or French airport the 20-speaker MLS models give every position an accent.
 
-## [0.7.0] — 2026-10-04
+## [0.7.0] - 2026-10-04
 
 ### Changed
 
 - voices: the Czech controller voice (cs_CZ-jirka-medium) reads English through RP phonemes (espeak en-gb-x-rp), the words pronounced as every English voice says them, a light Czech accent; assigned first at Czech airports (LK) again. More voices per country are added to the catalogue and assigned the same way.
 - speaker: `Options.Exclude` leaves voices out; nothing is excluded by default (ExcludedVoice was).
 
-## [0.6.0] — 2026-10-04
+## [0.6.0] - 2026-10-04
 
 ### Added
 
@@ -127,14 +127,14 @@ compatibility surface.
 - voices: `Dir()`, the per-user models folder (`%LOCALAPPDATA%\voice-goio\voices` on Windows), `Installed(manifest, dir)`, the manifest's models present there, and `Model.Profile(speakerID)`, one of their voices as a `VoiceProfile`.
 - grammar: `Commands`, an application's own SRGS grammar from phrases and intents ("gear up" → `gear_up`), and `Match`, the same matching for typed input; stt/sapi: `Options.Grammar` takes the grammar as text (`GrammarPath` still takes a file).
 
-## [0.5.0] — 2026-10-04
+## [0.5.0] - 2026-10-04
 
 ### Added
 
 - speaker: the radio, heard, as the simconnect airport map speaks it, for every application to share: `speaker.New`, `Set` (on/off and the one frequency followed), `Hear` an `Utterance`, `SetATIS` (or `Options.ATIS`) for the looping broadcast, `SayOnce`, `SetDevice`/`Devices`, `State`, `Clip`/`WAV` for a client playing on its own device. Voices per controller position with shifts and per crew, one call at a time with 1 to 5 s between, nothing said more than 60 s late, FAA or ICAO reading. The package doc lists the files that must sit beside the application (piper and the voice models) and what that means for packaging.
 - voices: `Speaker.Gender` ("F", "M" or "") and `PoolOptions.FemaleShare`. A position gets a voice of its gender (the share of positions that get a female one, e.g. 1/9 for 1:8), the best of that gender in its accent tier, and any voice when none is free. The genders come from the sources: VCTK's 109 speakers from the corpus's own speaker-info.txt (version 0.92, Edinburgh DataShare), which also gives each speaker's accent in place of the round-robin placeholders (63 female, 46 male); lessac (Blizzard 2013 corpus page), alba (DataShare abstract) and ryan (RyanSpeech paper); hfc_male, hfc_female, northern_english_male and southern_english_female by their names. alan and joe stay without one: their sources do not say.
 
-## [0.4.0] — 2026-10-02
+## [0.4.0] - 2026-10-02
 
 ### Changed
 
@@ -144,7 +144,7 @@ compatibility surface.
 
 - normalise: a lone A or I in a taxi route after "via" is the taxiway and is spelled: "via H, A" says "via hotel, alpha", not "via hotel, a".
 
-## [0.3.1] — 2026-09-28
+## [0.3.1] - 2026-09-28
 
 No Go API change: the types and functions are identical to 0.3.0. What changed
 is one more recognised phrase, and the demo.
@@ -169,7 +169,7 @@ is one more recognised phrase, and the demo.
   at the window edge, which destroyed the alignment that makes a transcript
   readable at a glance.
 
-## [0.3.0] — 2026-09-28
+## [0.3.0] - 2026-09-28
 
 Everything that can be done before a Windows machine is involved. The two
 Windows backends still have not run against hardware.
@@ -214,7 +214,7 @@ binary, and under Rosetta it hangs producing no output at all. The Windows
 binary is native on the target platform, so that verification moves to the
 bring-up session.
 
-## [0.2.0] — 2026-09-28
+## [0.2.0] - 2026-09-28
 
 New public API — `voicegoio.TagReason` and the recording options on
 `audio.Options` — so this is a minor bump rather than a patch. Nothing was
@@ -264,7 +264,7 @@ removed or changed shape, so upgrading from 0.1.2 needs no code changes.
 - A check-in that gave its level before the phrase identifying it
   ("BAW123 15000 with you") lost the level.
 
-## [0.1.2] — 2026-09-28
+## [0.1.2] - 2026-09-28
 
 No API change. Found by driving the live harness by hand.
 
@@ -290,7 +290,7 @@ No API change. Found by driving the live harness by hand.
 
 The recognition corpus is now 41 phrases, all tagged exactly.
 
-## [0.1.1] — 2026-09-28
+## [0.1.1] - 2026-09-28
 
 Toolchain and CI only; no change to the library itself. **Use this rather than
 v0.1.0**, whose workflow was misconfigured.
@@ -316,7 +316,7 @@ v0.1.0**, whose workflow was misconfigured.
   `internal/wav` from the first release commit, which built locally and failed
   every CI job on a fresh checkout.
 
-## [0.1.0] — 2026-09-28
+## [0.1.0] - 2026-09-28
 
 First tagged release. The platform-independent half of SPEC.md is complete and
 tested; the Windows backends are written and cross-compile on every commit but

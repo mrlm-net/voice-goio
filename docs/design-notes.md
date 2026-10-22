@@ -17,7 +17,7 @@ section: reference
 
 **Radio chain order (§4.6).** Levelling happens on the speech, before the noise floor and squelch bursts, rather than as the last stage before resampling, and it targets RMS with a soft ceiling rather than a peak. Two reasons: a long squelch tail otherwise drags the speech level down with it, and peak normalisation does not control how loud speech actually sounds. A side effect worth having is that the per-profile noise figures now mean something absolute — −45 dBFS of noise under speech at −15 dBFS RMS is a 30 dB signal-to-noise ratio on every profile, whatever the voice did.
 
-**Phraseology (§4.1).** The [spec](SPEC.md) §4.1 shows `127.45` spoken as `one two seven decimal four five` under ICAO, which contradicts the digit table two rows above it in the same table (ICAO speaks 5 as "fife", as the `FL350` and `SQK 4321` rows do). The digit table is the general rule, so it wins: the frequency reads `one two seven decimal four fife`. If the literal spec text is wanted instead, that is a one-line change in `normalise.digits` and one line in `testdata/normalise/icao.txt`.
+**Phraseology (§4.1).** The [spec](spec.md) §4.1 shows `127.45` spoken as `one two seven decimal four five` under ICAO, which contradicts the digit table two rows above it in the same table (ICAO speaks 5 as "fife", as the `FL350` and `SQK 4321` rows do). The digit table is the general rule, so it wins: the frequency reads `one two seven decimal four fife`. If the literal spec text is wanted instead, that is a one-line change in `normalise.digits` and one line in `testdata/normalise/icao.txt`.
 
 ## Versions describe what changed
 
