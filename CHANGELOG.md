@@ -7,6 +7,13 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-10-22
+
+### Changed
+
+- Docs: README is a landing page; its content lives on the docs site. New voicecheck page (every command, `pack` included). The speaker page covers one channel at a time, volume per channel (`SetGain`/`Gain`), speaking rate, `SayOnce` and `Pad`; voice assignment covers `AccentModels` and the `Pool` methods; recognition covers `grammar.Words`. Install lines use `@latest`.
+- Docs: SPEC.md is now spec.md (URL /docs/spec).
+
 ## [0.16.2] - 2026-10-11
 
 ### Changed
