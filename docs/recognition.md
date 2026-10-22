@@ -38,6 +38,8 @@ rec, err := sapi.New(sapi.Options{Grammar: g}) // r.Tags["intent"] == "gear_up"
 intent, ok := grammar.Match(cmds, "Gear up")  // typed: "gear_up", true
 ```
 
+`grammar.Words(s)` is the word split both use: lower case words, punctuation dropped, apostrophes kept (`"Doors closed."` is `doors`, `closed`).
+
 A hand-written SRGS file works too (`Options.GrammarPath`): its public root rule must be `transmission`, its tags set `out.intent`, and a `callsign` rule is what `SetCallsigns` rebuilds.
 
 ## Distress and urgency

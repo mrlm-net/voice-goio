@@ -25,4 +25,4 @@ The normaliser speaks METAR shorthand, so a broadcast can be written the way the
 
 ## Digits
 
-ICAO speaks 5 as "fife", as the `FL350` and `SQK 4321` examples do, and the frequency `127.45` reads `one two seven decimal four fife`. The historic [design spec](SPEC.md) §4.1 shows "five" there, contradicting its own digit table; the digit table wins. See [Design notes](design-notes.md).
+ICAO speaks 5 as "fife", as the `FL350` and `SQK 4321` examples do, and the frequency `127.45` reads `one two seven decimal four fife`. The historic [design spec](spec.md) §4.1 shows "five" there, contradicting its own digit table; the digit table wins. See [Design notes](design-notes.md).

@@ -24,7 +24,7 @@ It runs against the real piper binary on Windows in both consumers (sentence-at-
 
 ## Acceptance status
 
-Against the criteria of the [design spec](SPEC.md) §9:
+Against the criteria of the [design spec](spec.md) §9:
 
 | Criterion | Status |
 |---|---|

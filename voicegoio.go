@@ -13,7 +13,7 @@
 // that imports this one. Nothing in this package imports a subpackage, so the
 // application can compile against the API long before a given backend exists.
 //
-// Design constraints (see docs/SPEC.md):
+// Design constraints (see docs/spec.md):
 //   - no third party Go modules: go.mod has zero requires, stdlib only;
 //   - no cgo: every build is CGO_ENABLED=0, native APIs are reached through
 //     syscall (Windows) or subprocesses;

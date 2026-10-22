@@ -1,7 +1,7 @@
 package voicegoio_test
 
 // The wiring the consuming application does, compiled on every build so the
-// README cannot drift away from the API.
+// docs (docs/pipeline.md) cannot drift away from the API.
 //
 // These are Example functions without an "Output:" comment, which the go tool
 // compiles but does not run — they touch audio devices and subprocesses, so

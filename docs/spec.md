@@ -9,9 +9,9 @@ section: reference
 
 > [!NOTE]
 > **Historic: the original design spec.** It is kept for its reasoning and the
-> acceptance criteria the README refers to (§4, §9). The repository layout and
+> acceptance criteria the docs refer to (§4, §9). The repository layout and
 > the version plan below are outdated (packages such as `speaker`, voice packs
-> and `piper.Install` came later). The [README](../README.md) and the
+> and `piper.Install` came later). The rest of these docs and the
 > [CHANGELOG](../CHANGELOG.md) are current.
 
 ## 0. Goal
