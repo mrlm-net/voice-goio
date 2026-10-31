@@ -49,6 +49,7 @@ func start(opt Options, onnx, cfg string) (*proc, error) {
 	}
 	args = append(args, opt.Args...)
 	cmd := exec.Command(opt.PiperPath, args...)
+	hideConsole(cmd)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

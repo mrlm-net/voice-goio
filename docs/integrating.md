@@ -62,6 +62,7 @@ Remove it, or drop the `replace`, before a release build.
 | `v0.16.0` | `Speaker.SetGain` and `Gain`: a volume per channel (radio, intercom, PA) 0…1, applied to what is playing within about 0.1 s; `audio.Player.SetGain` and `Gain`. |
 | `v0.16.1` | Docs website: pages use the full width (no main-content cap). |
 | `v0.16.2` | Docs website: social metadata and preview image on the home page. |
+| `v0.16.4` | `tts/piper`: on Windows piper starts without a console window. |
 
 The full notes are in the [changelog](/docs/changelog).
 
