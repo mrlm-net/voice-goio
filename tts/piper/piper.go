@@ -316,6 +316,7 @@ func CheckFlags(piperPath string) (perLineProsody bool, help string, err error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, piperPath, "--help")
+	hideConsole(cmd)
 	out, err := cmd.CombinedOutput()
 	if ctx.Err() != nil {
 		return false, string(out), fmt.Errorf("piper: %s did not respond to --help within 20s; "+
