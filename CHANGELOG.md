@@ -7,6 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-11-15
+
+### Fixed
+- `stt/whisper`: `Install` on macOS fetches our whisper-cli builds (release `whisper-b5454`, arm64 with Metal, amd64); their SHA-256 are pinned.
+
 ## [0.18.0] - 2026-11-15
 
 ### Added

@@ -65,6 +65,7 @@ Remove it, or drop the `replace`, before a release build.
 | `v0.16.4` | `tts/piper`: on Windows piper starts without a console window. |
 | `v0.17.0` | `grammar.Controller`: the controller side (TWR and GND instructions, the traffic engine's clearance verbs), `fake.NewControllerParser`, `voicecheck recog -grammar controller`. |
 | `v0.18.0` | `stt/whisper`: whisper.cpp recognition for macOS and Linux (`Install`, `InstallModel`), `voicecheck whisper`, `recog -backend whisper`. |
+| `v0.18.1` | `stt/whisper`: macOS whisper-cli builds pinned, so `Install` works on macOS without Homebrew. |
 
 The full notes are in the [changelog](/docs/changelog).
 
