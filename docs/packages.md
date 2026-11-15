@@ -17,6 +17,7 @@ section: reference
 | `tts/fake/` | Deterministic tone generator for CI and regression. |
 | `stt/sapi/` | Windows SAPI 5 in-process recognizer over raw COM vtables. |
 | `stt/fake/` | The tag parser plus stdin and script recognisers, for development and regression. |
+| `stt/whisper/` | whisper.cpp (`whisper-cli`) as a subprocess for macOS and Linux (and Windows), tagged by the `stt/fake` parser; `Install`, `InstallModel`. |
 | `audio/` | Per-frequency queues and playback events; `winmm` on Windows, `afplay` on macOS, WAV files elsewhere, a silent sink for rendering. |
 | `audio/radio/` | The radio chain: band pass, presence, soft clip, noise, squelch, dropouts, level, resample. |
 | `data/`, `grammar/` | Embedded telephony table and the SRGS grammar, and `grammar.Commands` for an application's own phrases (leaf packages, because `go:embed` cannot reach out of its own directory). |

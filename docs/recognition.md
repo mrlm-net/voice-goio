@@ -1,6 +1,6 @@
 ---
 title: Recognition
-description: Pilot or controller speech in, intent tags out — SAPI on Windows, the fake backend elsewhere, and grammars of your own.
+description: Pilot or controller speech in, intent tags out — SAPI on Windows, whisper on macOS and Linux, the fake backend for tests, and grammars of your own.
 order: 14
 section: guides
 ---
@@ -18,7 +18,7 @@ r := <-rec.Results()                    // exactly one result per cycle
 switch r.Tags[voicegoio.TagIntent] { ... }
 ```
 
-On macOS use `stt/fake` (typed input or a script) — the same interface.
+On macOS and Linux use `stt/whisper` (below), or `stt/fake` (typed input or a script) — the same interface.
 
 ## The dynamic callsign rule
 
@@ -71,6 +71,18 @@ r.UseControllerGrammar()               // a fake.Recognizer, roster kept
 ```
 
 `voicecheck recog -grammar controller` runs `testdata/stt/controller.jsonl` through either backend.
+
+## Whisper on macOS and Linux
+
+`stt/whisper` runs whisper.cpp's `whisper-cli` once per push to talk cycle and tags its text with the same parser as `stt/fake`, so a `Recognition` is the same `{intent, callsign, value}` SAPI gives. The aircraft on frequency go into whisper's initial prompt. It is offline and needs no cgo.
+
+```go
+bin, _ := whisper.Install(ctx, "bin", nil)              // whisper.cpp's build (Windows, Linux), ours or Homebrew's (macOS)
+model, _ := whisper.InstallModel(ctx, "bin", "base.en", nil)
+rec, err := whisper.New(whisper.Options{Bin: bin, Model: model}) // Controller: true for the controller grammar
+```
+
+Recording uses `arecord` on Linux and sox's `rec` on macOS (`brew install sox`); `Options.Recorder` replaces it. `RecognizeFile` tags a 16 kHz WAV directly. `voicecheck whisper` installs both, and `voicecheck recog -backend whisper -bin … -model …` renders the corpus with the TTS and runs it through whisper.
 
 ## Distress and urgency
 

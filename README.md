@@ -25,7 +25,7 @@ pilot speech ─▶ STT ─▶ Recognition{intent, callsign, value} ─▶ app
 > [!NOTE]
 > Pre-1.0: the API changes between minor versions. The output side
 > (`tts/piper`, `speaker`, `audio` on `winmm`) runs on Windows hardware in two
-> applications; recognition (`stt/sapi`) has never run against a live engine.
+> applications; recognition (`stt/sapi`, `stt/whisper`) has never run against a live engine.
 > See [Platform status](https://goio.mrlm.net/docs/platform-status).
 
 ## Install

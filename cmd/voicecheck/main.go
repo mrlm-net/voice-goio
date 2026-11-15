@@ -2,7 +2,8 @@
 //
 //	voicecheck synth    --out ./wav              synthesise the audit text in every voice and radio profile
 //	voicecheck audit    --model de_DE-thorsten-medium   swap-trick audit for one non English model
-//	voicecheck recog    --backend fake|sapi --script testdata/stt/readbacks.jsonl
+//	voicecheck recog    --backend fake|sapi|whisper [--grammar controller] --script testdata/stt/readbacks.jsonl
+//	voicecheck whisper  --dir bin --model base.en   install whisper-cli and a model
 //	voicecheck devices                            list input and output devices
 //	voicecheck voices                             report pool size, accents and what is missing
 //	voicecheck download --model <name>            fetch a model from the voice repository
@@ -28,6 +29,7 @@ import (
 	"github.com/mrlm-net/voice-goio/internal/wav"
 	"github.com/mrlm-net/voice-goio/stt/fake"
 	"github.com/mrlm-net/voice-goio/stt/sapi"
+	"github.com/mrlm-net/voice-goio/stt/whisper"
 	"github.com/mrlm-net/voice-goio/tts"
 	"github.com/mrlm-net/voice-goio/voices"
 )
@@ -51,6 +53,8 @@ func main() {
 		err = cmdVoices(os.Args[2:])
 	case "pack":
 		err = cmdPack(os.Args[2:])
+	case "whisper":
+		err = cmdWhisper(os.Args[2:])
 	case "download":
 		err = cmdDownload(os.Args[2:])
 	case "-h", "--help", "help":
@@ -74,6 +78,7 @@ func usage() {
   devices   list audio input and output devices
   voices    report pool size, accent coverage and missing models
   download  fetch a model from the voice repository
+  whisper   install whisper-cli and a model (-dir bin -model base.en) for -backend whisper
   pack      zip a voice pack (-pack en|all -out file.zip) of the installed models for an installer
 
 Run "voicecheck <command> -h" for the flags of each.
@@ -240,13 +245,15 @@ func cmdAudit(args []string) error {
 func cmdRecog(args []string) error {
 	fs := flag.NewFlagSet("recog", flag.ExitOnError)
 	var (
-		backend = fs.String("backend", "fake", "fake or sapi")
+		backend = fs.String("backend", "fake", "fake, sapi or whisper")
 		script  = fs.String("script", filepath.Join("testdata", "stt", "readbacks.jsonl"), "corpus")
 		minPct  = fs.Float64("min", 95, "minimum percentage of exactly tagged phrases")
 		wavDir  = fs.String("wav", "", "render each phrase to a WAV here and feed the file to the engine, "+
-			"instead of waiting for someone to say it into a microphone (sapi only)")
+			"instead of waiting for someone to say it into a microphone (sapi; whisper always)")
 		ttsName = fs.String("tts", "", "tts backend used to render the phrases")
 		side    = fs.String("grammar", "atc", "atc (pilot speech) or controller (TWR and GND instructions)")
+		model   = fs.String("model", "", "whisper: ggml model file (whisper.InstallModel)")
+		bin     = fs.String("bin", "", "whisper: whisper-cli (default: beside the model, else PATH)")
 	)
 	fs.Parse(args)
 	switch *side {
@@ -275,9 +282,22 @@ func cmdRecog(args []string) error {
 		return recogFake(lines, *minPct)
 	case "sapi":
 		if *wavDir != "" {
-			return recogSAPIFiles(lines, *minPct, *wavDir, *ttsName)
+			rec, err := sapi.New(sapiOptions())
+			if err != nil {
+				return err
+			}
+			return recogFiles(lines, *minPct, *wavDir, *ttsName, rec, 0)
 		}
 		return recogSAPI(lines, *minPct)
+	case "whisper":
+		rec, err := whisper.New(whisper.Options{Bin: *bin, Model: *model, Controller: controller})
+		if err != nil {
+			return err
+		}
+		if *wavDir == "" {
+			*wavDir = filepath.Join(os.TempDir(), "voicecheck-whisper")
+		}
+		return recogFiles(lines, *minPct, *wavDir, *ttsName, whisperFiles{rec}, 16000)
 	default:
 		return fmt.Errorf("unknown backend %q", *backend)
 	}
@@ -365,11 +385,27 @@ func recogSAPI(lines []fake.ScriptLine, minPct float64) error {
 	return report(exact, total, minPct)
 }
 
-// recogSAPIFiles is the unattended form of the corpus run: every phrase is
-// rendered to a WAV and played into the engine through SpFileStream, so the
-// same expected-tags file validates the Windows backend without a person
-// saying forty phrases into a headset (SPEC.md 4.5).
-func recogSAPIFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string) error {
+// fileRecognizer is a backend that takes a WAV file: SAPI (through
+// SpFileStream) and whisper.
+type fileRecognizer interface {
+	SetCallsigns([]voicegoio.Callsign) error
+	RecognizeFile(path string) (voicegoio.Recognition, error)
+	Close() error
+}
+
+// whisperFiles is a whisper.Recognizer as a fileRecognizer.
+type whisperFiles struct{ *whisper.Recognizer }
+
+func (w whisperFiles) RecognizeFile(path string) (voicegoio.Recognition, error) {
+	return w.Recognizer.RecognizeFile(path), nil
+}
+
+// recogFiles is the unattended form of the corpus run: every phrase is
+// rendered to a WAV (at rate, 0: the voice's) and fed to the engine, so the
+// same expected-tags file validates a backend without a person saying
+// forty phrases into a headset (SPEC.md 4.5).
+func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string, rec fileRecognizer, rate int) error {
+	defer rec.Close()
 	if err := os.MkdirAll(wavDir, 0o755); err != nil {
 		return err
 	}
@@ -378,12 +414,6 @@ func recogSAPIFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName str
 		return err
 	}
 	defer engine.Close()
-
-	rec, err := sapi.New(sapiOptions())
-	if err != nil {
-		return err
-	}
-	defer rec.Close()
 
 	pool, err := loadPool("", "", 7)
 	if err != nil {
@@ -414,7 +444,11 @@ func recogSAPIFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName str
 		if err != nil {
 			return fmt.Errorf("render %q: %w", l.Text, err)
 		}
-		if err := wav.WriteFile(path, pcm, engine.SampleRate(voice)); err != nil {
+		sr := engine.SampleRate(voice)
+		if rate != 0 && rate != sr {
+			pcm, sr = resample(pcm, sr, rate), rate
+		}
+		if err := wav.WriteFile(path, pcm, sr); err != nil {
 			return err
 		}
 		got, err := rec.RecognizeFile(path)
@@ -645,4 +679,50 @@ func sapiOptions() sapi.Options {
 		return sapi.Options{Grammar: grammar.Controller}
 	}
 	return sapi.Options{}
+}
+
+// resample converts pcm from rate from to rate to, linearly: enough for a
+// recogniser's input (whisper takes 16 kHz).
+func resample(pcm []int16, from, to int) []int16 {
+	if len(pcm) == 0 || from == to {
+		return pcm
+	}
+	n := int(int64(len(pcm)) * int64(to) / int64(from))
+	out := make([]int16, n)
+	for i := range out {
+		x := float64(i) * float64(from) / float64(to)
+		j := int(x)
+		if j+1 >= len(pcm) {
+			out[i] = pcm[len(pcm)-1]
+			continue
+		}
+		f := x - float64(j)
+		out[i] = int16(float64(pcm[j])*(1-f) + float64(pcm[j+1])*f)
+	}
+	return out
+}
+
+// cmdWhisper installs whisper-cli and a model for -backend whisper.
+func cmdWhisper(args []string) error {
+	fs := flag.NewFlagSet("whisper", flag.ExitOnError)
+	dir := fs.String("dir", "bin", "folder: whisper-cli in <dir>/whisper, the model in <dir>")
+	model := fs.String("model", "base.en", "tiny.en, base.en or small.en")
+	fs.Parse(args)
+	progress := func(done, total int64) {
+		if total > 0 {
+			fmt.Fprintf(os.Stderr, "\r%3d%%", done*100/total)
+		}
+	}
+	bin, err := whisper.Install(context.Background(), *dir, progress)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stderr)
+	m, err := whisper.InstallModel(context.Background(), *dir, *model, progress)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(os.Stderr)
+	fmt.Printf("whisper-cli %s\nmodel       %s\nvoicecheck recog -backend whisper -bin %s -model %s\n", bin, m, bin, m)
+	return nil
 }

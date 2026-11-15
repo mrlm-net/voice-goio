@@ -1,0 +1,66 @@
+name: whisper macOS builds
+
+# whisper.cpp publishes no macOS whisper-cli; this builds ours from the same
+# tag stt/whisper pins (whisper.Release), as one static binary per
+# architecture, and attaches them to the voice-goio release whisper-<tag>.
+# Run by hand; then pin the printed SHA-256 in stt/whisper/install.go.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: whisper.cpp tag (whisper.Release)
+        required: true
+        default: b5454
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: whisper-cli darwin/${{ matrix.goarch }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - goarch: arm64
+            arch: arm64
+            metal: "ON"
+          - goarch: amd64
+            arch: x86_64
+            metal: "OFF"
+    steps:
+      - name: fetch whisper.cpp
+        run: git clone --depth 1 --branch "${{ inputs.tag }}" https://github.com/ggml-org/whisper.cpp src
+      - name: build
+        working-directory: src
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} -DGGML_NATIVE=OFF \
+            -DGGML_METAL=${{ matrix.metal }} -DGGML_METAL_EMBED_LIBRARY=ON \
+            -DWHISPER_BUILD_TESTS=OFF -DWHISPER_SDL2=OFF
+          cmake --build build --config Release -j 4 --target whisper-cli
+      - name: check the architecture
+        working-directory: src
+        run: |
+          archs=$(lipo -archs build/bin/whisper-cli)
+          echo "whisper-cli: $archs"
+          test "$archs" = "${{ matrix.arch }}"
+          otool -L build/bin/whisper-cli
+          if ! otool -L build/bin/whisper-cli | tail -n +2 | grep -v -E '^\s*(/usr/lib/|/System/Library/)'; then echo "system libraries only"; else echo "links a non-system library"; exit 1; fi
+          if [ "${{ matrix.arch }}" = "$(uname -m)" ]; then build/bin/whisper-cli --help > /dev/null 2>&1 || test $? -le 1; fi
+      - name: package
+        run: |
+          mkdir pkg && cp src/build/bin/whisper-cli src/LICENSE pkg/
+          tar -czf whisper-cli-darwin-${{ matrix.goarch }}.tar.gz -C pkg whisper-cli LICENSE
+          shasum -a 256 whisper-cli-darwin-${{ matrix.goarch }}.tar.gz | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rel="whisper-${{ inputs.tag }}"
+          gh release view "$rel" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1 || \
+            gh release create "$rel" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "whisper-cli ${{ inputs.tag }} for macOS" \
+              --notes "whisper-cli built from ggml-org/whisper.cpp ${{ inputs.tag }} (MIT, LICENSE inside) for stt/whisper on macOS." || true
+          gh release upload "$rel" -R "$GITHUB_REPOSITORY" --clobber whisper-cli-darwin-${{ matrix.goarch }}.tar.gz
