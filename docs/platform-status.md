@@ -10,13 +10,17 @@ section: reference
 | normalise, radio chain, voices, grammar parser | ✅ | ✅ | ✅ |
 | TTS | ✅ `say` (dev) + piper | ✅ piper, in use in both consumers | ✅ piper |
 | Playback (`audio`, `speaker`) | ✅ afplay, default device only | ✅ `winmm`, device per channel, in use in both consumers | WAV files |
-| Recognition | ✅ `stt/fake` | ⏳ `stt/sapi` — written, **not exercised by current consumers**, never run against a live engine | `stt/fake` |
+| Recognition | ⏳ `stt/whisper` (our build or Homebrew) + `stt/fake` | ⏳ `stt/sapi` — written, **not exercised by current consumers**, never run against a live engine; ⏳ `stt/whisper` | ⏳ `stt/whisper` + `stt/fake` |
 
 The consumers are the MyCrew app and the simconnect airport map; both run piper, the speaker and `winmm` playback on Windows hardware. Neither imports `stt/...`.
 
 ## `stt/sapi`
 
 It has never run against a live engine. It is complete — COM creation, audio input selection, grammar load, dynamic callsign rule, PTT, event pump, semantic property extraction — and it compiles and vets clean for `windows/amd64`. What it has not done is talk to SAPI. The struct layouts are pinned by `layout_windows_test.go`, which runs in CI on `windows-latest`, and every failure path returns a typed error. Expect to spend a session on bring-up.
+
+## `stt/whisper`
+
+whisper.cpp's `whisper-cli` as a subprocess, one run per push to talk cycle; its text is tagged by the `stt/fake` parser, so the tags match SAPI's. The tests run against `testdata/fakewhisper`; the real binary and models have not run in a consumer yet. Binaries: whisper.cpp's own for Windows and Linux (x64, arm64), ours for macOS (the `whisper-macos` workflow), or Homebrew's on macOS. Recording uses `arecord` on Linux and sox's `rec` on macOS (`Options.Recorder` replaces it).
 
 ## `tts/piper`
 

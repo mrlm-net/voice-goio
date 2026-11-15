@@ -7,6 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-15
+
+### Added
+- `stt/whisper` ([#50](https://github.com/mrlm-net/voice-goio/issues/50)): recognition on macOS and Linux (and Windows) with whisper.cpp's `whisper-cli` as a subprocess, one run per push to talk cycle, its text tagged by the `stt/fake` parser (pilot or controller grammar) so the tags match SAPI's; the callsigns on frequency in its prompt. `Install` fetches whisper.cpp b5454 (Windows x64, Linux x64/arm64, SHA-256 pinned; on macOS our build or a Homebrew `whisper-cli`), `InstallModel` a ggml English model (SHA-1 checked). Recording with `arecord` (Linux) or sox `rec` (macOS), replaceable. `voicecheck whisper` installs, `voicecheck recog -backend whisper` runs a corpus. The `whisper-macos` workflow builds the macOS binaries (arm64, x86_64; architecture checked).
+
 ## [0.17.0] - 2026-11-15
 
 ### Added

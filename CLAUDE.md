@@ -7,7 +7,7 @@ Offline ATC voice in and out, as a Go library (`github.com/mrlm-net/voice-goio`)
 - `speaker/` — what apps use: radio (one frequency, queue, gaps, ATIS), intercom, PA, chimes, device per channel, Clip/WAV.
 - `voices/` — manifest, packs + InstallPack, Downloader, Installed/Dir, Pool (Assign, AssignCrew).
 - `tts/piper` (+ `Install`), `tts/say` (macOS dev), `tts/fake`, `tts` (backend selection).
-- `stt/sapi` (Windows SAPI over raw COM, never run live, no consumer uses it), `stt/fake`.
+- `stt/sapi` (Windows SAPI over raw COM, never run live, no consumer uses it), `stt/whisper` (whisper.cpp subprocess, macOS/Linux; tags via the fake parser), `stt/fake`.
 - `normalise/` text to spoken ATC; `grammar/`, `data/` embedded SRGS + telephony; `audio/` players; `audio/radio` radio chain.
 - `internal/` dsp, wav, userdir (per-user folder), jsonl (piper stdin protocol). `cmd/demo`, `cmd/voicecheck` (tools).
 
