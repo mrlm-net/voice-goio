@@ -49,12 +49,10 @@ var Assets = map[string]Asset{
 		darwinAmd64SHA256, ""},
 }
 
-// The macOS builds' SHA-256, pinned once the whisper-macos workflow has
-// published them; "" until then (Install refuses, a Homebrew whisper-cli
-// still works).
+// The macOS builds' SHA-256, from the whisper-macos workflow run for b5454.
 const (
-	darwinArm64SHA256 = ""
-	darwinAmd64SHA256 = ""
+	darwinArm64SHA256 = "8ae13aebd4cee3a1f67a8a4e48a8940f00de378bd7714ff2cd4f77f9038b7dd9"
+	darwinAmd64SHA256 = "dbc3550575191cc48d10a7f6221b51bf9652a7875fb182523d1c5322a6889cbc"
 )
 
 // binName is whisper-cli's file name on this platform.
