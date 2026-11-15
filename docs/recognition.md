@@ -1,6 +1,6 @@
 ---
 title: Recognition
-description: Pilot speech in, intent tags out — SAPI on Windows, the fake backend elsewhere, and grammars of your own.
+description: Pilot or controller speech in, intent tags out — SAPI on Windows, the fake backend elsewhere, and grammars of your own.
 order: 14
 section: guides
 ---
@@ -41,6 +41,36 @@ intent, ok := grammar.Match(cmds, "Gear up")  // typed: "gear_up", true
 `grammar.Words(s)` is the word split both use: lower case words, punctuation dropped, apostrophes kept (`"Doors closed."` is `doors`, `closed`).
 
 A hand-written SRGS file works too (`Options.GrammarPath`): its public root rule must be `transmission`, its tags set `out.intent`, and a `callsign` rule is what `SetCallsigns` rebuilds.
+
+## The controller side
+
+For a game where the player is the controller, `grammar.Controller` recognises TWR and GND instructions. Its intents are the traffic engine's clearance verbs, so they map to actions without a table:
+
+| Intent | Said | `value` | Further tags |
+|---|---|---|---|
+| `startup` | "start up approved, QNH 1013" | | `qnh` |
+| `pushback` | "pushback approved, facing west" | facing | |
+| `pushstart` | "push back and start up approved" | facing | |
+| `taxi` | "taxi to holding point A1 runway 24 via B A" | runway | `holding_point`, `stand`, `via` |
+| `upto` | "taxi via B, up to A1" / "hold short of C" | taxiway | `via` |
+| `hold` | "hold short of runway 12" / "of C" / "hold position" | runway or taxiway | |
+| `cross` | "cross runway 12" | runway | |
+| `handoff` | "contact tower 118.1" | frequency | `station` |
+| `lineup`, `lineupbehind` | "(behind the landing A320,) line up and wait runway 24" | runway | |
+| `takeoff`, `land` | "runway 24 cleared for take-off, wind 240 degrees 8 knots" | runway | `wind` (`240/8`, `calm`) |
+| `abort` | "stop immediately" / "cancel take-off clearance" | | |
+| `goaround` | "go around" | | |
+| `vacate` | "vacate left via L" | taxiway | `side` |
+
+`say_again` and `standby` are recognised too. The callsign leads (or ends) the transmission and comes from the same dynamic rule.
+
+```go
+rec, err := sapi.New(sapi.Options{Grammar: grammar.Controller})
+p := fake.NewControllerParser()        // the pure Go counterpart
+r.UseControllerGrammar()               // a fake.Recognizer, roster kept
+```
+
+`voicecheck recog -grammar controller` runs `testdata/stt/controller.jsonl` through either backend.
 
 ## Distress and urgency
 

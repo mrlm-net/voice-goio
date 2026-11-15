@@ -24,6 +24,7 @@ import (
 	voicegoio "github.com/mrlm-net/voice-goio"
 	"github.com/mrlm-net/voice-goio/audio"
 	"github.com/mrlm-net/voice-goio/audio/radio"
+	"github.com/mrlm-net/voice-goio/grammar"
 	"github.com/mrlm-net/voice-goio/internal/wav"
 	"github.com/mrlm-net/voice-goio/stt/fake"
 	"github.com/mrlm-net/voice-goio/stt/sapi"
@@ -245,8 +246,19 @@ func cmdRecog(args []string) error {
 		wavDir  = fs.String("wav", "", "render each phrase to a WAV here and feed the file to the engine, "+
 			"instead of waiting for someone to say it into a microphone (sapi only)")
 		ttsName = fs.String("tts", "", "tts backend used to render the phrases")
+		side    = fs.String("grammar", "atc", "atc (pilot speech) or controller (TWR and GND instructions)")
 	)
 	fs.Parse(args)
+	switch *side {
+	case "atc":
+	case "controller":
+		controller = true
+		if *script == filepath.Join("testdata", "stt", "readbacks.jsonl") {
+			*script = filepath.Join("testdata", "stt", "controller.jsonl")
+		}
+	default:
+		return fmt.Errorf("unknown grammar %q", *side)
+	}
 
 	f, err := os.Open(*script)
 	if err != nil {
@@ -275,6 +287,9 @@ func cmdRecog(args []string) error {
 // implementation of the grammar.
 func recogFake(lines []fake.ScriptLine, minPct float64) error {
 	p := fake.NewParser()
+	if controller {
+		p = fake.NewControllerParser()
+	}
 	var total, exact int
 	for _, l := range lines {
 		if len(l.Callsigns) > 0 {
@@ -310,7 +325,7 @@ func recogFake(lines []fake.ScriptLine, minPct float64) error {
 // recogSAPI drives the real Windows engine. SPEC.md 4.5 runs the same corpus
 // through both backends so one expected-tags file covers them.
 func recogSAPI(lines []fake.ScriptLine, minPct float64) error {
-	rec, err := sapi.New(sapi.Options{})
+	rec, err := sapi.New(sapiOptions())
 	if err != nil {
 		return err
 	}
@@ -364,7 +379,7 @@ func recogSAPIFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName str
 	}
 	defer engine.Close()
 
-	rec, err := sapi.New(sapi.Options{})
+	rec, err := sapi.New(sapiOptions())
 	if err != nil {
 		return err
 	}
@@ -619,4 +634,15 @@ func cmdDownload(args []string) error {
 		return man.Save(*write)
 	}
 	return nil
+}
+
+// controller: recog runs the controller grammar (-grammar controller).
+var controller bool
+
+// sapiOptions loads the grammar recog runs.
+func sapiOptions() sapi.Options {
+	if controller {
+		return sapi.Options{Grammar: grammar.Controller}
+	}
+	return sapi.Options{}
 }

@@ -22,6 +22,8 @@ import (
 type Parser struct {
 	// spoken form (lower case) -> ICAO identifier
 	roster map[string]string
+	// controller: the controller side (grammar.Controller), not the pilot's
+	controller bool
 }
 
 // NewParser returns a parser with an empty roster.
@@ -79,6 +81,9 @@ var letterWord = map[string]byte{
 // grammar would have rejected. The application applies the same threshold it
 // applies to the real engine, so the two backends behave alike.
 func (p *Parser) Parse(text string) voicegoio.Recognition {
+	if p.controller {
+		return p.parseController(text)
+	}
 	toks := tokenize(text)
 	rec := voicegoio.Recognition{Text: text, Tags: map[string]string{}}
 

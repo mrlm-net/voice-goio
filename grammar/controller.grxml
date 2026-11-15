@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SRGS grammar for controller transmissions (TWR and GND): the player is the
+  controller, as in a tower ATC game. Loaded by stt/sapi like atc.grxml and
+  mirrored by the controller side of the pure Go parser in stt/fake
+  (fake.NewControllerParser).
+
+  The intents are the traffic engine's clearance verbs, so an application maps
+  them to its actions without a table: startup, pushback, pushstart, taxi,
+  upto, hold, cross, handoff, lineup, lineupbehind, takeoff, abort, land,
+  goaround, vacate; and say_again, standby.
+
+  value is the main element: the runway (taxi, cross, lineup, lineupbehind,
+  takeoff, land, hold short of a runway), the facing (pushback, pushstart),
+  the taxiway (upto, hold short of a taxiway, vacate) or the frequency
+  (handoff). Further tags: via (taxi route, "A3 B"), holding_point, stand,
+  station, wind ("240/8", "calm"), side (vacate), qnh.
+
+  The "callsign" rule is dynamic, as in atc.grxml: SetCallsigns rebuilds it
+  from the aircraft on frequency. A controller says it first; it may also
+  close the transmission.
+-->
+<grammar version="1.0" xml:lang="en-US" mode="voice" root="transmission"
+         tag-format="semantics/1.0"
+         xmlns="http://www.w3.org/2001/06/grammar">
+
+  <rule id="transmission" scope="public">
+    <one-of>
+      <item>
+        <ruleref uri="#callsign"/>
+        <ruleref uri="#instruction"/>
+        <tag>out=rules.instruction; out.callsign=rules.callsign;</tag>
+      </item>
+      <item>
+        <ruleref uri="#instruction"/>
+        <ruleref uri="#callsign"/>
+        <tag>out=rules.instruction; out.callsign=rules.callsign;</tag>
+      </item>
+      <item>
+        <ruleref uri="#short"/><tag>out.intent=rules.short;</tag>
+        <item repeat="0-1"><ruleref uri="#callsign"/><tag>out.callsign=rules.callsign;</tag></item>
+      </item>
+    </one-of>
+  </rule>
+
+  <!-- Rebuilt at runtime. Present so the static grammar compiles standalone. -->
+  <rule id="callsign" scope="public">
+    <one-of>
+      <item>unknown traffic<tag>out="UNKNOWN";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="short" scope="private">
+    <one-of>
+      <item>say again<tag>out="say_again";</tag></item>
+      <item>standby<tag>out="standby";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="instruction" scope="private">
+    <one-of>
+      <item><ruleref uri="#ground"/><tag>out=rules.ground;</tag></item>
+      <item><ruleref uri="#tower"/><tag>out=rules.tower;</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="ground" scope="private">
+    <one-of>
+      <item>
+        <ruleref uri="#startup"/> approved
+        <tag>out.intent="startup"; out.value="";</tag>
+        <item repeat="0-1"><ruleref uri="#qnh"/><tag>out.qnh=rules.qnh;</tag></item>
+      </item>
+      <item>
+        <ruleref uri="#pushback"/> approved
+        <tag>out.intent="pushback"; out.value="";</tag>
+        <item repeat="0-1">facing <ruleref uri="#compass"/><tag>out.value=rules.compass;</tag></item>
+      </item>
+      <item>
+        <one-of>
+          <item><ruleref uri="#pushback"/> and <ruleref uri="#startup"/> approved</item>
+          <item>push and start approved</item>
+        </one-of>
+        <tag>out.intent="pushstart"; out.value="";</tag>
+        <item repeat="0-1">facing <ruleref uri="#compass"/><tag>out.value=rules.compass;</tag></item>
+      </item>
+      <item>
+        <!-- "taxi to holding point A1 runway 24 via B A", "taxi to runway 24
+             via B", "taxi to stand B14 via A" -->
+        taxi to
+        <tag>out.intent="taxi"; out.value="";</tag>
+        <one-of>
+          <item>
+            holding point <ruleref uri="#taxiway"/><tag>out.holding_point=rules.taxiway;</tag>
+            <item repeat="0-1">runway <ruleref uri="#runway"/><tag>out.value=rules.runway;</tag></item>
+          </item>
+          <item>runway <ruleref uri="#runway"/><tag>out.value=rules.runway;</tag></item>
+          <item><one-of><item>stand</item><item>gate</item></one-of> <ruleref uri="#stand"/><tag>out.stand=rules.stand;</tag></item>
+        </one-of>
+        <item repeat="0-1">via <ruleref uri="#route"/><tag>out.via=rules.route;</tag></item>
+      </item>
+      <item>
+        <!-- A limit short of the runway: "taxi via B up to A1", "taxi via B,
+             hold short of A". -->
+        taxi via <ruleref uri="#route"/>
+        <one-of><item>up to</item><item>hold short of</item><item>hold short of taxiway</item></one-of>
+        <ruleref uri="#taxiway"/>
+        <tag>out.intent="upto"; out.value=rules.taxiway; out.via=rules.route;</tag>
+      </item>
+      <item>
+        hold short of runway <ruleref uri="#runway"/>
+        <tag>out.intent="hold"; out.value=rules.runway;</tag>
+      </item>
+      <item>
+        hold short of <item repeat="0-1">taxiway</item> <ruleref uri="#taxiway"/>
+        <tag>out.intent="hold"; out.value=rules.taxiway;</tag>
+      </item>
+      <item>
+        hold position
+        <tag>out.intent="hold"; out.value="";</tag>
+      </item>
+      <item>
+        cross runway <ruleref uri="#runway"/>
+        <tag>out.intent="cross"; out.value=rules.runway;</tag>
+      </item>
+      <item>
+        <one-of><item>contact</item><item>monitor</item></one-of>
+        <ruleref uri="#station"/> <ruleref uri="#frequency"/>
+        <tag>out.intent="handoff"; out.value=rules.frequency; out.station=rules.station;</tag>
+      </item>
+    </one-of>
+  </rule>
+
+  <rule id="tower" scope="private">
+    <one-of>
+      <item>
+        <item repeat="0-1">runway <ruleref uri="#runway"/></item>
+        line up and wait
+        <item repeat="0-1">runway <ruleref uri="#runway"/></item>
+        <tag>out.intent="lineup"; out.value=rules.runway;</tag>
+      </item>
+      <item>
+        <!-- Conditional: "behind the landing A320, line up and wait runway
+             24, behind". The traffic is not tagged. -->
+        behind <ruleref special="GARBAGE"/>
+        line up and wait
+        runway <ruleref uri="#runway"/>
+        <item repeat="0-1">behind</item>
+        <tag>out.intent="lineupbehind"; out.value=rules.runway;</tag>
+      </item>
+      <item>
+        <item repeat="0-1"><ruleref uri="#wind"/><tag>out.wind=rules.wind;</tag></item>
+        runway <ruleref uri="#runway"/>
+        cleared for <ruleref uri="#takeoff"/>
+        <tag>out.intent="takeoff"; out.value=rules.runway;</tag>
+        <item repeat="0-1"><ruleref uri="#wind"/><tag>out.wind=rules.wind;</tag></item>
+      </item>
+      <item>
+        <item repeat="0-1"><ruleref uri="#wind"/><tag>out.wind=rules.wind;</tag></item>
+        runway <ruleref uri="#runway"/>
+        cleared to land
+        <tag>out.intent="land"; out.value=rules.runway;</tag>
+        <item repeat="0-1"><ruleref uri="#wind"/><tag>out.wind=rules.wind;</tag></item>
+      </item>
+      <item>
+        <one-of>
+          <item>stop immediately</item>
+          <item>stop immediately i say again stop immediately</item>
+          <item>abort <ruleref uri="#takeoff"/></item>
+          <item>cancel <ruleref uri="#takeoff"/> clearance</item>
+          <item>hold position cancel <ruleref uri="#takeoff"/></item>
+        </one-of>
+        <tag>out.intent="abort"; out.value="";</tag>
+      </item>
+      <item>
+        <one-of><item>go around</item><item>go around i say again go around</item></one-of>
+        <tag>out.intent="goaround"; out.value="";</tag>
+      </item>
+      <item>
+        vacate
+        <tag>out.intent="vacate"; out.value="";</tag>
+        <item repeat="0-1">
+          <one-of><item>left<tag>out.side="left";</tag></item><item>right<tag>out.side="right";</tag></item></one-of>
+        </item>
+        <item repeat="0-1">via <item repeat="0-1">taxiway</item> <ruleref uri="#taxiway"/><tag>out.value=rules.taxiway;</tag></item>
+      </item>
+    </one-of>
+  </rule>
+
+  <rule id="startup" scope="private">
+    <one-of><item>start up</item><item>startup</item></one-of>
+  </rule>
+
+  <rule id="pushback" scope="private">
+    <one-of><item>push back</item><item>pushback</item></one-of>
+  </rule>
+
+  <rule id="takeoff" scope="private">
+    <one-of><item>take off</item><item>takeoff</item></one-of>
+  </rule>
+
+  <rule id="compass" scope="private">
+    <one-of>
+      <item>north<tag>out="north";</tag></item>
+      <item>east<tag>out="east";</tag></item>
+      <item>south<tag>out="south";</tag></item>
+      <item>west<tag>out="west";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="station" scope="private">
+    <one-of>
+      <item>tower<tag>out="tower";</tag></item>
+      <item>ground<tag>out="ground";</tag></item>
+      <item>delivery<tag>out="delivery";</tag></item>
+      <item>approach<tag>out="approach";</tag></item>
+      <item>departure<tag>out="departure";</tag></item>
+      <item>radar<tag>out="radar";</tag></item>
+      <item>director<tag>out="director";</tag></item>
+      <item>center<tag>out="center";</tag></item>
+      <item>centre<tag>out="center";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="wind" scope="private">
+    <one-of>
+      <item>wind calm<tag>out="calm";</tag></item>
+      <item>
+        wind <ruleref uri="#digits3"/> <item repeat="0-1">degrees</item>
+        <ruleref uri="#digit"/><tag>out=rules.digits3+"/"+rules.digit;</tag>
+        <item repeat="0-1"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+        <item repeat="0-1"><one-of><item>knots</item><item>knot</item></one-of></item>
+      </item>
+    </one-of>
+  </rule>
+
+  <rule id="qnh" scope="private">
+    <one-of><item>qnh</item><item>altimeter</item></one-of>
+    <ruleref uri="#digits4"/><tag>out=rules.digits4;</tag>
+  </rule>
+
+  <rule id="digit" scope="private">
+    <one-of>
+      <item>zero<tag>out="0";</tag></item>
+      <item>one<tag>out="1";</tag></item>
+      <item>two<tag>out="2";</tag></item>
+      <item><one-of><item>three</item><item>tree</item></one-of><tag>out="3";</tag></item>
+      <item>four<tag>out="4";</tag></item>
+      <item><one-of><item>five</item><item>fife</item></one-of><tag>out="5";</tag></item>
+      <item>six<tag>out="6";</tag></item>
+      <item>seven<tag>out="7";</tag></item>
+      <item>eight<tag>out="8";</tag></item>
+      <item><one-of><item>nine</item><item>niner</item></one-of><tag>out="9";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="digits3" scope="private">
+    <ruleref uri="#digit"/><tag>out=rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+  </rule>
+
+  <rule id="digits4" scope="private">
+    <ruleref uri="#digit"/><tag>out=rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+  </rule>
+
+  <rule id="frequency" scope="private">
+    <ruleref uri="#digits3"/><tag>out=rules.digits3;</tag>
+    <one-of><item>decimal</item><item>point</item></one-of>
+    <ruleref uri="#digit"/><tag>out=out+"."+rules.digit;</tag>
+    <item repeat="0-1"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+    <item repeat="0-1"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+  </rule>
+
+  <rule id="runway" scope="private">
+    <ruleref uri="#digit"/><tag>out=rules.digit;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <item repeat="0-1">
+      <one-of>
+        <item>left<tag>out=out+"L";</tag></item>
+        <item>right<tag>out=out+"R";</tag></item>
+        <item>center<tag>out=out+"C";</tag></item>
+        <item>centre<tag>out=out+"C";</tag></item>
+      </one-of>
+    </item>
+  </rule>
+
+  <rule id="letter" scope="private">
+    <one-of>
+      <item>alpha<tag>out="A";</tag></item><item>bravo<tag>out="B";</tag></item>
+      <item>charlie<tag>out="C";</tag></item><item>delta<tag>out="D";</tag></item>
+      <item>echo<tag>out="E";</tag></item><item>foxtrot<tag>out="F";</tag></item>
+      <item>golf<tag>out="G";</tag></item><item>hotel<tag>out="H";</tag></item>
+      <item>india<tag>out="I";</tag></item><item>juliett<tag>out="J";</tag></item>
+      <item>kilo<tag>out="K";</tag></item><item>lima<tag>out="L";</tag></item>
+      <item>mike<tag>out="M";</tag></item><item>november<tag>out="N";</tag></item>
+      <item>oscar<tag>out="O";</tag></item><item>papa<tag>out="P";</tag></item>
+      <item>quebec<tag>out="Q";</tag></item><item>romeo<tag>out="R";</tag></item>
+      <item>sierra<tag>out="S";</tag></item><item>tango<tag>out="T";</tag></item>
+      <item>uniform<tag>out="U";</tag></item><item>victor<tag>out="V";</tag></item>
+      <item>whiskey<tag>out="W";</tag></item><item>xray<tag>out="X";</tag></item>
+      <item>yankee<tag>out="Y";</tag></item><item>zulu<tag>out="Z";</tag></item>
+    </one-of>
+  </rule>
+
+  <rule id="taxiway" scope="private">
+    <ruleref uri="#letter"/><tag>out=rules.letter;</tag>
+    <item repeat="0-2"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+  </rule>
+
+  <rule id="stand" scope="private">
+    <ruleref uri="#letter"/><tag>out=rules.letter;</tag>
+    <ruleref uri="#digit"/><tag>out=out+rules.digit;</tag>
+    <item repeat="0-2"><ruleref uri="#digit"/><tag>out=out+rules.digit;</tag></item>
+  </rule>
+
+  <rule id="route" scope="private">
+    <ruleref uri="#taxiway"/><tag>out=rules.taxiway;</tag>
+    <item repeat="0-5">
+      <item repeat="0-1"><one-of><item>then</item><item>and</item></one-of></item>
+      <ruleref uri="#taxiway"/><tag>out=out+" "+rules.taxiway;</tag>
+    </item>
+  </rule>
+</grammar>
