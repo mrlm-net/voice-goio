@@ -14,3 +14,11 @@ import _ "embed"
 //
 //go:embed atc.grxml
 var ATC string
+
+// Controller is the SRGS XML for the other side of the radio: the player as
+// the controller (TWR and GND), its intents the traffic engine's clearance
+// verbs (taxi, lineup, takeoff, land, ...). Its "callsign" rule is dynamic
+// as in ATC. The pure Go counterpart is stt/fake's NewControllerParser.
+//
+//go:embed controller.grxml
+var Controller string

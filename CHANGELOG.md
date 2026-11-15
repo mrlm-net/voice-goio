@@ -7,6 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-15
+
+### Added
+- Controller-side grammar ([#48](https://github.com/mrlm-net/voice-goio/issues/48)): `grammar.Controller` recognises TWR and GND instructions (start-up, pushback, taxi, hold, cross, hand-off, line-up, take-off, abort, landing, go-around, vacate), its intents the traffic engine's clearance verbs, with runway, taxiway, frequency, wind, route, holding point and stand as tags. `fake.NewControllerParser` and `Recognizer.UseControllerGrammar` are its pure Go counterpart; `voicecheck recog -grammar controller` runs the new corpus `testdata/stt/controller.jsonl`.
+
 ## [0.16.4] - 2026-10-31
 
 ### Fixed

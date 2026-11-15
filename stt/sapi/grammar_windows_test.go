@@ -37,3 +37,22 @@ func TestApplicationGrammar(t *testing.T) {
 		t.Errorf("SetCallsigns: %v", err)
 	}
 }
+
+// The controller grammar (#48) compiles in SAPI and takes a roster. Skipped
+// as TestApplicationGrammar.
+func TestControllerGrammar(t *testing.T) {
+	if testing.Short() {
+		t.Skip("starts the speech engine")
+	}
+	r, err := New(Options{Grammar: grammar.Controller})
+	if errors.Is(err, ErrNoSpeechPack) || errors.Is(err, ErrNoAudioInput) {
+		t.Skip(err)
+	}
+	if err != nil {
+		t.Fatalf("grammar not loaded: %v", err)
+	}
+	defer r.Close()
+	if err := r.SetCallsigns([]voicegoio.Callsign{{ICAO: "CSA123"}}); err != nil {
+		t.Errorf("SetCallsigns: %v", err)
+	}
+}

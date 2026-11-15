@@ -1,0 +1,36 @@
+# Controller corpus (grammar/controller.grxml, fake.NewControllerParser): the
+# player as TWR and GND. The first line sets the aircraft on frequency; every
+# line after it is one push to talk cycle with every tag the grammar must
+# produce (intent, callsign, value and the further tags).
+{"callsigns": ["BAW123", "CSA1234", "DLH4EK"]}
+{"text": "Speedbird one two three start up approved QNH one zero one three", "tags": {"intent": "startup", "callsign": "BAW123", "qnh": "1013"}}
+{"text": "Speedbird one two three startup approved", "tags": {"intent": "startup", "callsign": "BAW123"}}
+{"text": "Speedbird one two three push back approved", "tags": {"intent": "pushback", "callsign": "BAW123"}}
+{"text": "Speedbird one two three pushback approved facing west", "tags": {"intent": "pushback", "callsign": "BAW123", "value": "west"}}
+{"text": "Speedbird one two three push back and start up approved facing north", "tags": {"intent": "pushstart", "callsign": "BAW123", "value": "north"}}
+{"text": "Speedbird one two three push and start approved", "tags": {"intent": "pushstart", "callsign": "BAW123"}}
+{"text": "Speedbird one two three taxi to holding point alpha one runway two four via bravo alpha", "tags": {"intent": "taxi", "callsign": "BAW123", "value": "24", "holding_point": "A1", "via": "B A"}}
+{"text": "Speedbird one two three taxi to runway zero six via lima then foxtrot", "tags": {"intent": "taxi", "callsign": "BAW123", "value": "06", "via": "L F"}}
+{"text": "Speedbird one two three taxi to stand bravo one four via alpha", "tags": {"intent": "taxi", "callsign": "BAW123", "stand": "B14", "via": "A"}}
+{"text": "Speedbird one two three taxi via bravo up to alpha one", "tags": {"intent": "upto", "callsign": "BAW123", "value": "A1", "via": "B"}}
+{"text": "Speedbird one two three taxi via bravo hold short of taxiway charlie", "tags": {"intent": "upto", "callsign": "BAW123", "value": "C", "via": "B"}}
+{"text": "Speedbird one two three hold short of runway one two", "tags": {"intent": "hold", "callsign": "BAW123", "value": "12"}}
+{"text": "Speedbird one two three hold short of charlie", "tags": {"intent": "hold", "callsign": "BAW123", "value": "C"}}
+{"text": "Speedbird one two three hold position", "tags": {"intent": "hold", "callsign": "BAW123"}}
+{"text": "Speedbird one two three cross runway one two", "tags": {"intent": "cross", "callsign": "BAW123", "value": "12"}}
+{"text": "Speedbird one two three contact tower one one eight decimal one", "tags": {"intent": "handoff", "callsign": "BAW123", "value": "118.1", "station": "tower"}}
+{"text": "Lufthansa four echo kilo monitor ground one two one decimal niner", "tags": {"intent": "handoff", "callsign": "DLH4EK", "value": "121.9", "station": "ground"}}
+{"text": "CSA Lines one two three four line up and wait runway two four", "tags": {"intent": "lineup", "callsign": "CSA1234", "value": "24"}}
+{"text": "CSA Lines one two three four runway two four line up and wait", "tags": {"intent": "lineup", "callsign": "CSA1234", "value": "24"}}
+{"text": "CSA Lines one two three four behind the landing airbus line up and wait runway two four behind", "tags": {"intent": "lineupbehind", "callsign": "CSA1234", "value": "24"}}
+{"text": "CSA Lines one two three four runway two four cleared for take off wind two four zero degrees eight knots", "tags": {"intent": "takeoff", "callsign": "CSA1234", "value": "24", "wind": "240/8"}}
+{"text": "CSA Lines one two three four wind calm runway zero six cleared for takeoff", "tags": {"intent": "takeoff", "callsign": "CSA1234", "value": "06", "wind": "calm"}}
+{"text": "CSA Lines one two three four stop immediately I say again stop immediately", "tags": {"intent": "abort", "callsign": "CSA1234"}}
+{"text": "CSA Lines one two three four cancel take off clearance", "tags": {"intent": "abort", "callsign": "CSA1234"}}
+{"text": "Lufthansa four echo kilo runway two four cleared to land wind two three zero degrees one two knots", "tags": {"intent": "land", "callsign": "DLH4EK", "value": "24", "wind": "230/12"}}
+{"text": "Lufthansa four echo kilo go around I say again go around", "tags": {"intent": "goaround", "callsign": "DLH4EK"}}
+{"text": "Lufthansa four echo kilo vacate left via lima", "tags": {"intent": "vacate", "callsign": "DLH4EK", "value": "L", "side": "left"}}
+{"text": "Lufthansa four echo kilo vacate right", "tags": {"intent": "vacate", "callsign": "DLH4EK", "side": "right"}}
+{"text": "say again", "tags": {"intent": "say_again"}}
+{"text": "Speedbird one two three standby", "tags": {"intent": "standby", "callsign": "BAW123"}}
+{"text": "Speedbird one two three request taxi", "tags": {"intent": "say_again", "callsign": "BAW123", "reason": "off_grammar"}}
