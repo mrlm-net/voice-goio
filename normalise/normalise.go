@@ -303,6 +303,9 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 	// manufacturer ("Airbus A321": "A three twenty-one", not "alpha three
 	// two one").
 	prevWord := ""
+	// stand: inside a stand or gate label after "stand"/"gate" (#54):
+	// standFirst before its first token, standMore after a part of it.
+	stand := standNone
 	for i := 0; i < len(toks); i++ {
 		raw := toks[i]
 		word, tail := splitPunct(raw)
@@ -314,6 +317,15 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 		up := strings.ToUpper(word)
 		inRoute := route && isTaxiwayID(word)
 		route = strings.EqualFold(word, "via") || inRoute && strings.HasSuffix(tail, ",")
+		inStand := stand != standNone && isStandPart(word, stand == standFirst)
+		switch {
+		case tail == "" && (strings.EqualFold(word, "stand") || strings.EqualFold(word, "gate")):
+			stand = standFirst
+		case inStand && tail == "":
+			stand = standMore
+		default:
+			stand = standNone
+		}
 
 		// next returns the following token stripped of punctuation, and a
 		// closure to consume it once a keyword has claimed it.
@@ -335,6 +347,13 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 		names, number, numTail, took := n.spokenCallsign(toks, i)
 		model, isModel := typeWords(up)
 		switch {
+		// ---- a stand or gate label: "stand A", "gate FDX6", "stand H17-1" --
+		// Spelled before anything else may claim it as a callsign, an
+		// article or a pronoun.
+		case inStand:
+			isKeyword = true
+			words = n.digits(word, ph)
+
 		// ---- an aircraft type: "Airbus A321", "Boeing 737" ----------------
 		case afterMaker && isModel:
 			words = model
@@ -603,6 +622,59 @@ func isTaxiwayID(s string) bool {
 		return false
 	}
 	return isAlnum(s)
+}
+
+// Where Spoken is in a stand or gate label.
+const (
+	standNone  = iota
+	standFirst // after "stand" or "gate", before the label
+	standMore  // after a part of the label, more may follow
+)
+
+// standKeywords are the keywords that start the next group of a clearance and
+// so end a stand label written in capitals ("STAND 42 TWY B").
+var standKeywords = map[string]bool{
+	"FL": true, "HDG": true, "RWY": true, "TWY": true, "SQK": true, "SSR": true,
+	"QNH": true, "FT": true, "KT": true, "KTS": true,
+}
+
+// isStandPart reports whether a token after "stand" or "gate" is part of the
+// stand's label, to be spelled (#54). The label is written as tokens: a part
+// with a digit in capitals, a part of letters only in the case it came in. So
+// a part is spelled when it has a digit ("H17-1", "1B", "FDX6") or is one to
+// four capital letters ("A", "I", "CRP"); anything else ("Hel", "aim",
+// "South", "by") is a word and ends the label. A word in capitals the
+// application writes anyway ("STAND BY", "GATE IS", "STAND 42 VIA TWY B") is
+// not a label, except a single letter right after "stand"/"gate".
+func isStandPart(s string, first bool) bool {
+	if s == "" || len(s) > 8 {
+		return false
+	}
+	digit, lower := false, false
+	for i := 0; i < len(s); i++ {
+		switch c := s[i]; {
+		case c >= '0' && c <= '9':
+			digit = true
+		case c >= 'a' && c <= 'z':
+			lower = true
+		case c >= 'A' && c <= 'Z', c == '-':
+		default:
+			return false
+		}
+	}
+	if s[0] == '-' || s[len(s)-1] == '-' {
+		return false
+	}
+	if digit {
+		return true
+	}
+	if lower || strings.Contains(s, "-") || len(s) > 4 {
+		return false
+	}
+	if first && len(s) == 1 {
+		return true
+	}
+	return !plainWords[s] && !standKeywords[s] && acronyms[s] == "" && weatherWords[s] == ""
 }
 
 func isUnit(tok string, units ...string) bool {

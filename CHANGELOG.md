@@ -7,6 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.18.2] - 2026-11-18
+
+### Fixed
+- `normalise`: the label after "stand" or "gate" is spelled, letters in the phonetic alphabet and digits one by one: a part with a digit ("H17-1", "1B", "FDX6") or one to four capital letters ("A", "I", "CRP"); words in any other case end the label ("Hel aim pt", "South Pen", "stand by"). A bare "A" or "I" is no longer the article or the pronoun, "FDX6" and "KAL1" no longer callsigns there (#54).
+
 ## [0.18.1] - 2026-11-15
 
 ### Fixed
