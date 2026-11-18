@@ -7,6 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.18.3] - 2026-11-19
+
+### Fixed
+- `normalise`: the taxiway of an intersection right after "runway <rwy> at" is spelled as after "via", one or two capital letters with optional digits: "runway 10 at A" is "runway one zero at alpha", "at B2" "at bravo two" ("holding short", "line up", "cross" alike). "at" anywhere else stays a word ("wait at A", "at 5000 ft", "runway 24, at A") (#56).
+
 ## [0.18.2] - 2026-11-18
 
 ### Fixed

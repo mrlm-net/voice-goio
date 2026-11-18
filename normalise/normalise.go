@@ -306,6 +306,9 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 	// stand: inside a stand or gate label after "stand"/"gate" (#54):
 	// standFirst before its first token, standMore after a part of it.
 	stand := standNone
+	// rwyAt: an intersection after a runway, "runway 10 at A" (#56):
+	// rwyAtRunway after the runway group, rwyAtWord after its "at".
+	rwyAt := rwyAtNone
 	for i := 0; i < len(toks); i++ {
 		raw := toks[i]
 		word, tail := splitPunct(raw)
@@ -325,6 +328,12 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 			stand = standMore
 		default:
 			stand = standNone
+		}
+		inRwyAt := rwyAt == rwyAtWord && isIntersectionTaxiway(word)
+		if rwyAt == rwyAtRunway && tail == "" && strings.EqualFold(word, "at") {
+			rwyAt = rwyAtWord
+		} else {
+			rwyAt = rwyAtNone
 		}
 
 		// next returns the following token stripped of punctuation, and a
@@ -351,6 +360,11 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 		// Spelled before anything else may claim it as a callsign, an
 		// article or a pronoun.
 		case inStand:
+			isKeyword = true
+			words = n.digits(word, ph)
+
+		// ---- the taxiway of an intersection: "runway 10 at A" -------------
+		case inRwyAt:
 			isKeyword = true
 			words = n.digits(word, ph)
 
@@ -388,6 +402,9 @@ func (n *Normaliser) Spoken(text string, ph voicegoio.Phraseology) string {
 			v, t := consume()
 			tail = t
 			words = append([]string{"runway"}, n.runway(v, ph)...)
+			if t == "" {
+				rwyAt = rwyAtRunway
+			}
 
 		// ---- taxiway ------------------------------------------------------
 		case (up == "TWY" || up == "TAXIWAY") && next != "":
@@ -630,6 +647,28 @@ const (
 	standFirst // after "stand" or "gate", before the label
 	standMore  // after a part of the label, more may follow
 )
+
+// Where Spoken is in an intersection after a runway, "runway 10 at A".
+const (
+	rwyAtNone   = iota
+	rwyAtRunway // after "runway <designator>"
+	rwyAtWord   // after its "at", before the taxiway
+)
+
+// isIntersectionTaxiway reports whether the token after "runway <rwy> at" is
+// a taxiway designator, to be spelled as after "via" (#56): one or two
+// capital letters and optional digits ("A", "B2", "G1", "AA"). Anything else
+// ("5000", "the", "TWY") is left to the rest of Spoken.
+func isIntersectionTaxiway(s string) bool {
+	letters := 0
+	for letters < len(s) && s[letters] >= 'A' && s[letters] <= 'Z' {
+		letters++
+	}
+	if letters == 0 || letters > 2 || !isDigits(s[letters:]) && s[letters:] != "" {
+		return false
+	}
+	return !standKeywords[s]
+}
 
 // standKeywords are the keywords that start the next group of a clearance and
 // so end a stand label written in capitals ("STAND 42 TWY B").

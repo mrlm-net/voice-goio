@@ -67,6 +67,7 @@ Remove it, or drop the `replace`, before a release build.
 | `v0.18.0` | `stt/whisper`: whisper.cpp recognition for macOS and Linux (`Install`, `InstallModel`), `voicecheck whisper`, `recog -backend whisper`. |
 | `v0.18.1` | `stt/whisper`: macOS whisper-cli builds pinned, so `Install` works on macOS without Homebrew. |
 | `v0.18.2` | `normalise`: stand and gate labels spelled ("H17-1", "FDX6", a bare "A"), not read as words or callsigns. |
+| `v0.18.3` | `normalise`: an intersection taxiway after "runway <n> at" spelled ("runway one zero at alpha"). |
 
 The full notes are in the [changelog](/docs/changelog).
 
