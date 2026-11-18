@@ -107,3 +107,40 @@ func BenchmarkSpoken(b *testing.B) {
 		_ = n.Spoken(in, voicegoio.ICAO)
 	}
 }
+
+// TestStandLabels covers #54: the label after "stand" or "gate" is spelled,
+// never read as an article, a pronoun, a callsign or a word in capitals.
+func TestStandLabels(t *testing.T) {
+	n := normalise.New()
+	for _, c := range []struct{ in, want string }{
+		{"taxi to stand A", "taxi to stand alpha"},
+		{"taxi to stand I", "taxi to stand india"},
+		{"TAXI TO STAND A", "taxi to stand alpha"},
+		{"taxi to gate i", "taxi to gate i"},
+		{"taxi to stand FDX6", "taxi to stand foxtrot delta xray six"},
+		{"taxi to Gate KAL1", "taxi to Gate kilo alpha lima one"},
+		{"taxi to stand H17-1", "taxi to stand hotel one seven one"},
+		{"taxi to stand 1B A380", "taxi to stand one bravo, alpha tree eight zero"},
+		{"taxi to stand C", "taxi to stand charlie"},
+		{"taxi to stand CRP", "taxi to stand charlie romeo papa"},
+		{"taxi to stand 1000", "taxi to stand one zero zero zero"},
+		{"taxi to stand TBA South Pen", "taxi to stand tango bravo alpha South Pen"},
+		{"taxi to stand Hel aim pt", "taxi to stand Hel aim pt"},
+		{"taxi to stand 42 via TWY B", "taxi to stand four two, via taxiway bravo"},
+		{"TAXI TO STAND 42 VIA TWY B", "taxi to stand four two, via taxiway bravo"},
+		{"stand by", "stand by"},
+		{"STAND BY", "stand by"},
+		{"standby", "standby"},
+		{"gate is closed", "gate is closed"},
+		{"GATE IS CLOSED", "gate is closed"},
+		{"FDX6 cleared to land", "Fedex six, cleared to land"},
+		{"stand A, FDX6 cleared to land", "stand alpha, Fedex six, cleared to land"},
+	} {
+		if got := n.Spoken(c.in, voicegoio.ICAO); got != c.want {
+			t.Errorf("Spoken(%q)\n got: %s\nwant: %s", c.in, got, c.want)
+		}
+	}
+	if got, want := n.Spoken("taxi to stand 3B", voicegoio.FAA), "taxi to stand three bravo"; got != want {
+		t.Errorf("FAA: got %q, want %q", got, want)
+	}
+}
