@@ -144,3 +144,30 @@ func TestStandLabels(t *testing.T) {
 		t.Errorf("FAA: got %q, want %q", got, want)
 	}
 }
+
+// TestRunwayAtTaxiway covers #56: the taxiway of an intersection after
+// "runway <rwy> at" is spelled as after "via"; "at" elsewhere stays a word.
+func TestRunwayAtTaxiway(t *testing.T) {
+	n := normalise.New()
+	for _, c := range []struct{ in, want string }{
+		{"Airfrans 3641, runway 10 at A, cleared for take-off", "Airfrans tree six four one, runway one zero at alpha, cleared for take-off"},
+		{"KLM 781, holding short runway 10 at A, ready for departure", "KLM seven eight one, holding short runway one zero at alpha, ready for departure"},
+		{"Airfrans 3641, runway 10 at A, cleared for take-off.", "Airfrans tree six four one, runway one zero at alpha, cleared for take-off."},
+		{"line up runway 24 at B2", "line up runway two four at bravo two"},
+		{"runway 06 at G1, cleared for take-off", "runway zero six at golf one, cleared for take-off"},
+		{"RWY 27L AT AA, cleared for take-off", "runway two seven left at alpha alpha, cleared for take-off"},
+		{"cross runway 24 at A", "cross runway two four at alpha"},
+		{"runway 24 at I", "runway two four at india"},
+		{"runway 24 at the end", "runway two four at the end"},
+		{"runway 24 at 5000 ft", "runway two four at fife thousand"},
+		{"runway 24, at A", "runway two four, at a"},
+		{"runway 24 at ABC", "runway two four at alpha bravo charlie"},
+		{"wait at A", "wait at a"},
+		{"climb to 5000 ft at A", "climb to fife thousand at a"},
+		{"at a glance", "at a glance"},
+	} {
+		if got := n.Spoken(c.in, voicegoio.ICAO); got != c.want {
+			t.Errorf("Spoken(%q)\n got: %s\nwant: %s", c.in, got, c.want)
+		}
+	}
+}
