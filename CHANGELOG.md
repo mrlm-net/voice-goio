@@ -7,6 +7,18 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-25
+
+### Added
+- `speaker`: `Utterance.Hooks` (`OnStart`, `OnDone`), told when a line starts playing and when it is done: played, stopped or dropped (not queued, stale, off the frequency, a synthesis error, Close). On every channel, chimes included; `OnDone` exactly once per utterance, after `OnStart` has returned. Each hook runs on its own goroutine, never under the speaker's locks, so a hook may call the speaker and a slow one delays no audio.
+- `speaker`: `StopChannel(ch)` stops the intercom or the cabin PA: what it is saying fades out over `StopFade` (200 ms), the line being prepared and its queue are dropped (each `OnDone` called), the voice and the lane are free for the next line. The radio and its ATIS are never touched (false for `ChannelRadio`).
+- `audio`: `Player.Stop(fade)` fades out what is playing and drops what is queued before it; what is played after it plays in full. On Windows the fade starts after the parts already at the device (0.1 to 0.2 s); with afplay (macOS) the line playing runs to its end.
+
+Both are opt-in: without `Hooks` and `StopChannel` the speaker plays as before.
+
+### Fixed
+- `speaker`: `Close` returns once the speaker's loops have ended (at most 5 s), so nothing is logged or played after it.
+
 ## [0.18.3] - 2026-11-19
 
 ### Fixed

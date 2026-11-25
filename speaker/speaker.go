@@ -128,6 +128,13 @@ type Utterance struct {
 	// call), below 1 slower; kept within MinTempo…MaxTempo. It scales the
 	// voice's LengthScale.
 	Tempo float32
+	// Hooks, when set, are told when it starts playing and when it is done
+	// (played, stopped or dropped), on any channel, chimes included; nil
+	// changes nothing. See Hooks.
+	Hooks *Hooks
+
+	// tr follows it once queued: its Hooks and its lane's stops.
+	tr *track
 }
 
 // MinTempo and MaxTempo bound Utterance.Tempo: faster than MaxTempo is no
@@ -287,6 +294,19 @@ type Speaker struct {
 	newPlayer  func(device string) (player, []voicegoio.Device, error)
 	done       chan struct{}
 	closeOnce  sync.Once
+	// loops is the main loop and the two lanes' loops, waited for by Close.
+	loops sync.WaitGroup
+}
+
+// closeWait is how long Close waits for the loops to end.
+const closeWait = 5 * time.Second
+
+// start runs the main loop and the lanes' loops.
+func (s *Speaker) start() {
+	s.loops.Add(3)
+	go func() { defer s.loops.Done(); s.run() }()
+	go func() { defer s.loops.Done(); s.runLane(s.ic) }()
+	go func() { defer s.loops.Done(); s.runLane(s.pa) }()
 }
 
 // New makes a speaker, off; nothing is opened until it is turned on.
@@ -294,7 +314,7 @@ func New(opt Options) *Speaker {
 	s := newSpeaker(opt, timing{maxLag: MaxLag, gap: Gap, jitter: GapJitter, atisGap: ATISGap, tick: Tick, icGap: IntercomGap, pickup: PickupMin, pickupJitter: PickupJitter})
 	s.openEngine = func() (*engine, error) { return openPiper(s.opt) }
 	s.newPlayer = openPlayer
-	go s.run()
+	s.start()
 	return s
 }
 
@@ -407,9 +427,7 @@ func (s *Speaker) Set(on bool, freq string) {
 	if freq != s.freq && s.player != nil {
 		s.player.Close()
 		s.player = nil
-		for len(s.queue) > 0 {
-			<-s.queue
-		}
+		drain(s.queue)
 	}
 	s.freq = freq
 	if !on {
@@ -506,23 +524,27 @@ func (s *Speaker) playerOf(ch Channel) player {
 // utterance is queued on the intercom whatever the speaker's state. It never
 // blocks; a full queue drops it.
 func (s *Speaker) Hear(u Utterance) {
-	if u.PA {
-		s.pa.queueItem(u)
+	if u.PA || u.Intercom {
+		l := s.ic
+		if u.PA {
+			l = s.pa
+		}
+		s.mu.Lock()
+		s.queueLocked(l, u)
+		s.mu.Unlock()
 		return
 	}
-	if u.Intercom {
-		s.ic.queueItem(u)
-		return
-	}
+	u.tr = newTrack(u.Hooks, 0)
 	s.mu.Lock()
-	skip := !s.on || s.freq == "" || u.Frequency != s.freq || u.Position == PosATIS
-	s.mu.Unlock()
-	if skip {
+	defer s.mu.Unlock()
+	if !s.on || s.freq == "" || u.Frequency != s.freq || u.Position == PosATIS || closed(s.done) {
+		u.tr.end()
 		return
 	}
 	select {
 	case s.queue <- item{u, time.Now()}:
 	default: // behind: drop it
+		u.tr.end()
 	}
 }
 
@@ -537,17 +559,20 @@ func (s *Speaker) SayOnce(u Utterance) bool {
 	if u.Intercom {
 		return s.onLane(s.ic, u)
 	}
+	u.tr = newTrack(u.Hooks, 0)
 	s.mu.Lock()
 	if !s.on {
 		if err := s.open(); err != nil {
 			s.status = err.Error()
 			s.mu.Unlock()
+			u.tr.end()
 			return false
 		}
 	}
 	p := s.player
 	s.mu.Unlock()
 	if p == nil {
+		u.tr.end()
 		return false
 	}
 	go s.say(u, true)
@@ -607,10 +632,18 @@ type lane struct {
 	player   player
 	lastEnd  time.Time
 	chimeEnd time.Time // when the last chime (and its pickup) ended
+	// StopChannel: gen counts the stops (a line queued before the last
+	// one is dropped), stop is closed at the next one.
+	gen  uint64
+	stop chan struct{}
+	// The voice the line in progress reserved (Speaker.mouths) and until
+	// when, freed by a stop.
+	mouth    string
+	mouthEnd time.Time
 }
 
 func newLane(ch Channel, key string) *lane {
-	return &lane{ch: ch, key: key, queue: make(chan item, 64)}
+	return &lane{ch: ch, key: key, queue: make(chan item, 64), stop: make(chan struct{})}
 }
 
 // onLane opens the voice (unless u is a chime) and l's player, and queues
@@ -624,22 +657,28 @@ func (s *Speaker) onLane(l *lane, u Utterance) bool {
 			s.status = err.Error()
 		}
 		s.mu.Unlock()
+		newTrack(u.Hooks, 0).end()
 		s.opt.Logf("voice: %s: %v", l.ch, err)
 		return false
 	}
+	ok := s.queueLocked(l, u)
 	s.mu.Unlock()
-	return l.queueItem(u)
+	return ok
 }
 
-// queueItem queues u on l without blocking; false when the queue is full
-// (u is dropped).
-func (l *lane) queueItem(u Utterance) bool {
-	select {
-	case l.queue <- item{u, time.Now()}:
-		return true
-	default: // behind: drop it
-		return false
+// queueLocked queues u on l without blocking; false when it is dropped (a
+// full queue, the speaker closed), its OnDone then called; s.mu held.
+func (s *Speaker) queueLocked(l *lane, u Utterance) bool {
+	u.tr = newTrack(u.Hooks, l.gen)
+	if !closed(s.done) {
+		select {
+		case l.queue <- item{u, time.Now()}:
+			return true
+		default: // behind: drop it
+		}
 	}
+	u.tr.end()
+	return false
 }
 
 // openLaneLocked opens the voices (when voice: a chime needs none) and l's
@@ -685,6 +724,7 @@ func (s *Speaker) runLane(l *lane) {
 			}
 			s.mu.Unlock()
 			if time.Since(from) > s.t.maxLag {
+				it.u.tr.end()
 				continue
 			}
 			s.sayOnLane(l, it.u)
@@ -693,9 +733,16 @@ func (s *Speaker) runLane(l *lane) {
 }
 
 // sayOnLane synthesises u in its voice, without the radio chain (the PA
-// through the cabin speaker's), and waits while it is played on l.
+// through the cabin speaker's), and waits while it is played on l; a stop
+// of l (StopChannel) ends it.
 func (s *Speaker) sayOnLane(l *lane, u Utterance) {
+	defer u.tr.end()
 	s.mu.Lock()
+	if u.tr.stale(l) {
+		s.mu.Unlock()
+		return
+	}
+	stop := l.stop
 	err := s.openLaneLocked(l, u.Chime == "")
 	e, p, next := s.eng, l.player, l.lastEnd.Add(s.t.icGap)
 	s.mu.Unlock()
@@ -704,7 +751,7 @@ func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 		return
 	}
 	if u.Chime != "" {
-		s.playChime(l, u, p, next)
+		s.playChime(l, u, p, next, stop)
 		return
 	}
 	voice := s.voiceOf(e, u)
@@ -725,6 +772,10 @@ func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 	// lanes never take the same moment.
 	said := samplesDuration(len(out), rate)
 	s.mu.Lock()
+	if u.tr.stale(l) {
+		s.mu.Unlock()
+		return
+	}
 	start := time.Now()
 	if next.After(start) {
 		start = next
@@ -734,24 +785,25 @@ func (s *Speaker) sayOnLane(l *lane, u Utterance) {
 		start = busy
 	}
 	s.mouths[key] = start.Add(said)
+	l.mouth, l.mouthEnd = key, start.Add(said)
 	s.mu.Unlock()
-	if !s.sleep(time.Until(start)) {
+	if !s.sleepOr(time.Until(start), stop) {
 		return
 	}
-	if !s.take(lanePrio(l.ch)) { // one at a time (OneAtATime)
+	if !s.takeOr(lanePrio(l.ch), stop) { // one at a time (OneAtATime)
 		return
 	}
 	defer s.give(0)
+	if closed(stop) {
+		return
+	}
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
-	if err := p.Play(voicegoio.Transmission{Frequency: l.key, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, rate); err != nil {
-		return // closed meanwhile
+	if !s.playOnLane(l, u, p, voicegoio.Transmission{Frequency: l.key, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, rate, said) {
+		return // closed or stopped meanwhile
 	}
-	s.mu.Lock()
-	l.lastEnd = time.Now().Add(said)
-	s.mu.Unlock()
-	s.sleep(said)
+	s.sleepOr(said, stop)
 }
 
 // sleep waits d unless the speaker is closed meanwhile, and reports whether
@@ -803,9 +855,23 @@ func (s *Speaker) atisOn(freq string) (string, string, bool) {
 	return a.airport, a.text, ok
 }
 
-// Close stops the speaker and releases the player and piper.
+// Close stops the speaker and releases the player and piper. It returns
+// once the speaker's loops have ended, so nothing is logged after it, or
+// after closeWait at most.
 func (s *Speaker) Close() error {
 	s.closeOnce.Do(func() { close(s.done) })
+	s.release()
+	ended := make(chan struct{})
+	go func() { s.loops.Wait(); close(ended) }()
+	select {
+	case <-ended:
+	case <-time.After(closeWait):
+	}
+	return nil
+}
+
+// release turns the speaker off and releases what it opened.
+func (s *Speaker) release() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.on, s.status = false, "off"
@@ -813,7 +879,9 @@ func (s *Speaker) Close() error {
 		s.player.Close()
 		s.player = nil
 	}
+	drain(s.queue)
 	for _, l := range []*lane{s.ic, s.pa} {
+		drain(l.queue)
 		if l.player != nil {
 			l.player.Close()
 			l.player = nil
@@ -823,21 +891,19 @@ func (s *Speaker) Close() error {
 		s.eng.tts.Close()
 		s.eng = nil
 	}
-	return nil
 }
 
 // run says what is queued; while the followed frequency is an ATIS and
 // nothing else is to be said, it says the ATIS again and again. The intercom
 // runs beside it.
 func (s *Speaker) run() {
-	go s.runLane(s.ic)
-	go s.runLane(s.pa)
 	for {
 		select {
 		case <-s.done:
 			return
 		case it := <-s.queue:
 			if time.Since(it.when) > s.t.maxLag {
+				it.u.tr.end()
 				continue
 			}
 			s.say(it.u, false)
@@ -968,6 +1034,7 @@ func (s *Speaker) voiceAt(e *engine, u Utterance) voicegoio.VoiceProfile {
 // say synthesises u in its speaker's voice and waits while it is played;
 // force says it with the speaker off (SayOnce).
 func (s *Speaker) say(u Utterance, force bool) {
+	defer u.tr.end()
 	s.mu.Lock()
 	if !s.on && !force || s.player == nil || s.eng == nil {
 		s.mu.Unlock()
@@ -1009,6 +1076,7 @@ func (s *Speaker) say(u Utterance, force bool) {
 	if err := p.Play(voicegoio.Transmission{Frequency: QueueKey, ControllerID: who(u), Phraseology: ph, Text: u.Text}, out, p.SampleRate()); err != nil {
 		return // turned off meanwhile
 	}
+	u.tr.start()
 	// Wait while it is said, so the queue stays on the lag it has.
 	said := samplesDuration(len(out), p.SampleRate())
 	s.mu.Lock()
@@ -1134,24 +1202,34 @@ func samplesDuration(n, rate int) time.Duration {
 
 // playChime plays chime u on the intercom player p from next on; after a
 // call, the next item waits for the one called to pick up.
-func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time) {
+func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time, stop <-chan struct{}) {
 	pcm := ChimePCM(u.Chime)
-	if !s.sleep(time.Until(next)) {
+	if !s.sleepOr(time.Until(next), stop) {
 		return
 	}
-	if !s.take(lanePrio(l.ch)) { // one at a time (OneAtATime)
+	if !s.takeOr(lanePrio(l.ch), stop) { // one at a time (OneAtATime)
 		return
 	}
-	// Its PA or answer next: the floor kept for this lane a moment more.
+	// Its PA or answer next: the floor kept for this lane a moment more,
+	// unless the lane is stopped.
 	keep := chimeKeep
-	defer func() { s.give(keep) }()
+	defer func() {
+		if closed(stop) {
+			keep = 0
+		}
+		s.give(keep)
+	}()
+	if closed(stop) {
+		return
+	}
 	if s.opt.OnSay != nil {
 		s.opt.OnSay(u)
 	}
-	if err := p.Play(voicegoio.Transmission{Frequency: l.key, ControllerID: "chime", Text: string(u.Chime)}, pcm, ChimeRate); err != nil {
+	played := samplesDuration(len(pcm), ChimeRate)
+	if !s.playOnLane(l, u, p, voicegoio.Transmission{Frequency: l.key, ControllerID: "chime", Text: string(u.Chime)}, pcm, ChimeRate, played) {
 		return
 	}
-	said := samplesDuration(len(pcm), ChimeRate)
+	said := played
 	if u.Chime == ChimeCall {
 		s.mu.Lock()
 		said += s.t.pickup
@@ -1161,10 +1239,12 @@ func (s *Speaker) playChime(l *lane, u Utterance, p player, next time.Time) {
 		s.mu.Unlock()
 	}
 	s.mu.Lock()
-	l.lastEnd = time.Now().Add(said - s.t.icGap)
-	l.chimeEnd = l.lastEnd
+	if !u.tr.stale(l) {
+		l.lastEnd = time.Now().Add(said - s.t.icGap)
+		l.chimeEnd = l.lastEnd
+	}
 	s.mu.Unlock()
-	s.sleep(said - s.t.icGap)
+	s.sleepOr(said-s.t.icGap, stop)
 }
 
 // voiceKey is a voice as one person: its model and speaker.

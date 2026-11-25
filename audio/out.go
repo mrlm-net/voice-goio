@@ -11,6 +11,7 @@ import (
 	"math"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	voicegoio "github.com/mrlm-net/voice-goio"
 	"github.com/mrlm-net/voice-goio/internal/dsp"
@@ -30,9 +31,10 @@ const DefaultDevice = ""
 type sink interface {
 	devices() ([]voicegoio.Device, error)
 	open(deviceID string, sampleRate int) error
-	// write blocks until the samples have been played, each part at the
-	// gain gain() gives as it goes to the device (0…1).
-	write(pcm []int16, gain func() float64) error
+	// write blocks until the samples have been played, each part as
+	// shape gives it when it goes to the device (at the gain, faded after
+	// a Stop); a part shape says is the last ends it.
+	write(pcm []int16, shape func(part []int16) (out []int16, last bool)) error
 	close() error
 	// selectable reports whether this platform can route to a chosen device.
 	selectable() bool
@@ -70,6 +72,7 @@ type item struct {
 	t    voicegoio.Transmission
 	pcm  []int16
 	rate int
+	cut  uint64 // Player.cuts when it was queued
 }
 
 // Player implements voicegoio.Player.
@@ -93,6 +96,9 @@ type Player struct {
 	closed  bool
 	// gain: the volume 0…1 (float64 bits), applied as the audio goes out.
 	gain atomic.Uint64
+	// cuts counts the Stops; fade is the last one's fade (nanoseconds).
+	cuts atomic.Uint64
+	fade atomic.Int64
 }
 
 // NewPlayer opens the output device.
@@ -201,7 +207,7 @@ func (p *Player) Play(t voicegoio.Transmission, pcm []int16, sampleRate int) err
 		sampleRate = p.rate
 	}
 	select {
-	case q <- item{t: t, pcm: pcm, rate: sampleRate}:
+	case q <- item{t: t, pcm: pcm, rate: sampleRate, cut: p.cuts.Load()}:
 		return nil
 	default:
 		return fmt.Errorf("audio: frequency %s is congested (%d queued)", t.Frequency, p.depth)
@@ -218,6 +224,9 @@ func (p *Player) serve(q chan item) {
 		case it, ok := <-q:
 			if !ok {
 				return
+			}
+			if it.cut != p.cuts.Load() {
+				continue // queued before a Stop
 			}
 			p.emit(voicegoio.PlaybackEvent{Frequency: it.t.Frequency, ControllerID: it.t.ControllerID, Started: true})
 			pcm := it.pcm
@@ -236,7 +245,7 @@ func (p *Player) serve(q chan item) {
 				}
 				// The device write is serialised by the sink itself; only one
 				// frequency is audible at a time.
-				_ = s.write(pcm, p.Gain)
+				_ = s.write(pcm, p.shaper(it.cut))
 			}
 			p.emit(voicegoio.PlaybackEvent{Frequency: it.t.Frequency, ControllerID: it.t.ControllerID, Started: false})
 		}
@@ -308,4 +317,38 @@ func scaled(pcm []int16, g float64) []int16 {
 		out[i] = int16(float64(s) * g)
 	}
 	return out
+}
+
+// Stop fades out what is playing over fade (0 cuts it at once) and drops
+// what is queued, on every frequency of the player; what is played after
+// it plays as usual. Opt-in: a player never stopped plays as before. On
+// Windows the fade starts after the parts already sent to the device (0.1
+// to 0.2 s); with afplay (macOS) what is playing runs to its end.
+func (p *Player) Stop(fade time.Duration) {
+	p.fade.Store(int64(max(fade, 0)))
+	p.cuts.Add(1)
+}
+
+// shaper shapes one transmission queued at cut as it goes to the device:
+// each part at the gain and, once a Stop came, faded to silence over the
+// Stop's fade, its last part then the last.
+func (p *Player) shaper(cut uint64) func([]int16) ([]int16, bool) {
+	left, total := -1, 0
+	return func(part []int16) ([]int16, bool) {
+		g := p.Gain()
+		if left < 0 && p.cuts.Load() != cut {
+			total = int(time.Duration(p.fade.Load()).Seconds() * float64(p.rate))
+			left = total
+		}
+		if left < 0 {
+			return scaled(part, g), false
+		}
+		n := min(len(part), left)
+		out := make([]int16, n)
+		for i := range out {
+			out[i] = int16(float64(part[i]) * g * float64(left-i) / float64(total))
+		}
+		left -= n
+		return out, left == 0
+	}
 }

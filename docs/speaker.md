@@ -88,6 +88,34 @@ The same control exists one level down, on `audio.Player`: `SetGain(g)` and `Gai
 
 `Utterance.Tempo` is how fast a call is said against the voice's own pace: 1 (or 0) as the voice speaks, above 1 faster (a busy frequency, an urgent call), below 1 slower. It is kept within `speaker.MinTempo` (0.8) and `speaker.MaxTempo` (1.35), since faster than that is no longer clear on the radio, and it scales the voice's `LengthScale`.
 
+## Start and done hooks
+
+`Utterance.Hooks` follows one line: `OnStart` as it starts playing (its audio given to the player, after its gap, its voice and, with `OneAtATime`, the floor), `OnDone` when it is done, whether it played or not: played to its end (a call chime with its pickup pause), stopped by `StopChannel`, or dropped (not queued, stale, off the frequency followed, a synthesis error, `Close`). `OnDone` is called exactly once for every utterance given with hooks, after `OnStart` has returned when that was called. It works on every channel, chimes included; `nil` (the default) changes nothing.
+
+Each hook runs on its own goroutine, never under the speaker's locks: a hook may call the speaker (`SayPA`, `State`), and a slow one delays no audio.
+
+```go
+done := make(chan struct{})
+sp.SayOnce(speaker.Utterance{PA: true, Text: "Cabin crew, seats for take-off", Voice: &captain,
+    Hooks: &speaker.Hooks{
+        OnStart: func() { ui.Show("PA in progress") },
+        OnDone:  func() { close(done) },
+    }})
+```
+
+`SayIntercom` and `SayPA` take no hooks; give the line to `SayOnce` (or `Hear`) with `Intercom` or `PA` set, as above.
+
+## Stopping the intercom or the PA
+
+`StopChannel(ch)` stops one lane, `ChannelIntercom` or `ChannelPA`: what it is saying fades out over `StopFade` (200 ms), the line being prepared or waiting its turn is dropped, and so is everything queued on it, each with its `OnDone`. The voice and the lane are free again once the fade has ended, so the next line follows at once. The radio and its ATIS are never touched: `StopChannel(ChannelRadio)` returns false, as does an unknown channel.
+
+```go
+sp.StopChannel(speaker.ChannelPA) // the captain interrupts the PA
+sp.SayPA("Cabin crew, take your seats", captain)
+```
+
+The fade comes from `audio.Player.Stop(fade)`, one level down: it fades out what the player is playing and drops what was queued before it. On Windows the fade starts after the parts already at the device (0.1 to 0.2 s); with afplay (macOS) the line playing runs to its end, its queue still dropped.
+
 ## Saying something once
 
 `SayOnce(u)` says an utterance now, whatever frequency is followed and even while the speaker is off: an airport panel's ATIS button, for example. It returns false when the voice is unavailable (`State().Status` says why). An `Intercom` utterance is queued on the intercom, as `SayIntercom` does.
