@@ -184,7 +184,7 @@ func (s *winSink) open(deviceID string, sampleRate int) error {
 
 // write plays pcm, alternating between the two prepared buffers so the device
 // is never starved between chunks.
-func (s *winSink) write(pcm []int16, gain func() float64) error {
+func (s *winSink) write(pcm []int16, shape func([]int16) ([]int16, bool)) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.open_ {
@@ -200,13 +200,14 @@ func (s *winSink) write(pcm []int16, gain func() float64) error {
 			inflight[i] = false
 		}
 		end := min(off+s.chunk, len(pcm))
-		n := end - off
+		// Per chunk: a knob turned or a Stop is heard within one.
+		part, last := shape(pcm[off:end])
+		n := len(part)
+		if n == 0 {
+			break
+		}
 		b := s.bufs[i]
-		g := gain() // per chunk: a knob turned is heard within one
-		for j, sample := range pcm[off:end] {
-			if g < 1 {
-				sample = int16(float64(sample) * g)
-			}
+		for j, sample := range part {
 			b[j*2] = byte(uint16(sample))
 			b[j*2+1] = byte(uint16(sample) >> 8)
 		}
@@ -219,6 +220,9 @@ func (s *winSink) write(pcm []int16, gain func() float64) error {
 			return err
 		}
 		inflight[i] = true
+		if last {
+			break
+		}
 	}
 	for i := range inflight {
 		if inflight[i] {

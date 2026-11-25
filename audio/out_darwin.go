@@ -53,8 +53,11 @@ func (s *darwinSink) open(_ string, sampleRate int) error {
 	return nil
 }
 
-func (s *darwinSink) write(pcm []int16, gain func() float64) error {
-	pcm = scaled(pcm, gain())
+func (s *darwinSink) write(pcm []int16, shape func([]int16) ([]int16, bool)) error {
+	pcm, _ = shape(pcm)
+	if len(pcm) == 0 {
+		return nil
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.opened {

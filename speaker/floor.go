@@ -36,11 +36,21 @@ func newFloor() *floor {
 
 // take waits for the floor at priority prio; false when done closes first.
 func (f *floor) take(done <-chan struct{}, prio int) bool {
+	return f.takeOr(done, nil, prio)
+}
+
+// takeOr is take, also given up when stop (nil never) closes first.
+func (f *floor) takeOr(done, stop <-chan struct{}, prio int) bool {
 	f.mu.Lock()
 	f.waiting[prio]++
+	left := false
 	defer func() {
 		f.mu.Lock()
 		f.waiting[prio]--
+		if left {
+			close(f.wake)
+			f.wake = make(chan struct{})
+		}
 		f.mu.Unlock()
 	}()
 	for {
@@ -70,6 +80,9 @@ func (f *floor) take(done <-chan struct{}, prio int) bool {
 		case <-done:
 			f.mu.Lock() // the deferred decrement takes it again
 			f.mu.Unlock()
+			return false
+		case <-stop:
+			left = true
 			return false
 		case <-wake:
 		case <-timeout:

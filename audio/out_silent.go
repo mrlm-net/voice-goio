@@ -32,7 +32,7 @@ func (s *silentSink) open(string, int) error {
 	return nil
 }
 
-func (s *silentSink) write([]int16, func() float64) error {
+func (s *silentSink) write([]int16, func([]int16) ([]int16, bool)) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if !s.opened {

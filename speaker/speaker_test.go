@@ -95,6 +95,7 @@ type fakePlayer struct {
 	closed bool
 	device string
 	gain   float64
+	stops  []time.Duration // Stop's fades (hooks_test.go)
 }
 
 func (p *fakePlayer) Play(t voicegoio.Transmission, pcm []int16, _ int) error {
@@ -165,7 +166,7 @@ func newRig(t *testing.T, tm timing, opt Options) *rig {
 		return p, []voicegoio.Device{{ID: "", Name: "default", Default: true}, {ID: "1", Name: "headset"}}, nil
 	}
 	r.s = s
-	go s.run()
+	s.start()
 	t.Cleanup(func() { s.Close() })
 	return r
 }

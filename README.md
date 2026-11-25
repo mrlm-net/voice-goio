@@ -66,7 +66,7 @@ backend, so the pipeline is audible before anything has been downloaded.
 Full documentation is at **[goio.mrlm.net](https://goio.mrlm.net/)**:
 
 - [Getting started](https://goio.mrlm.net/docs/getting-started) — install, the demos, build and test
-- [The speaker](https://goio.mrlm.net/docs/speaker) — radio, intercom, cabin PA, chimes, volume per channel
+- [The speaker](https://goio.mrlm.net/docs/speaker) — radio, intercom, cabin PA, chimes, volume per channel, start/done hooks, stopping the intercom or PA
 - [Piper and voices](https://goio.mrlm.net/docs/piper-and-voices) — installing the synthesiser, voice packs and accents
 - [Voice assignment](https://goio.mrlm.net/docs/voice-assignment) — a voice per position, controller and crew
 - [Recognition](https://goio.mrlm.net/docs/recognition) — SAPI, the fake backend and grammars of your own
