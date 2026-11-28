@@ -100,10 +100,11 @@ func instruction(toks []string, tags map[string]string) (intent, value string) {
 		return "standby", ""
 	}
 	windTag(toks, tags)
-	if has(toks, "cleared for takeoff") {
+	// "clear to land": a common slip for cleared, the clearance is the same.
+	if has(toks, "cleared for takeoff") || has(toks, "clear for takeoff") {
 		return "takeoff", runwayAfter(toks)
 	}
-	if has(toks, "cleared to land") {
+	if has(toks, "cleared to land") || has(toks, "clear to land") {
 		return "land", runwayAfter(toks)
 	}
 	if has(toks, "line up and wait") {

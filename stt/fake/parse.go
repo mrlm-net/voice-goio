@@ -468,7 +468,7 @@ func parseBody(toks []string) (intent, value string) {
 	if _, ok := any(toks, "established on the localizer", "localizer established", "established"); ok {
 		return "report_established", ""
 	}
-	if _, ok := any(toks, "runway vacated", "vacated", "clear of the runway"); ok {
+	if _, ok := any(toks, "runway vacated", "vacated", "runway vacate", "clear of the runway"); ok {
 		return "report_vacated", ""
 	}
 	if _, ok := any(toks, "field in sight", "runway in sight", "traffic in sight"); ok {
@@ -548,7 +548,7 @@ func parseRequest(toks []string) (intent, value string) {
 // on, and an unrecognised nature must never downgrade a mayday.
 var natures = map[string]string{
 	"engine failure": "engine_failure", "engine fire": "engine_fire",
-	"fire on board": "fire", "smoke in the cockpit": "smoke", "smoke": "smoke",
+	"fire on board": "fire", "smoke in the cockpit": "smoke", "smoke": "smoke", "smoking": "smoke",
 	"low fuel": "low_fuel", "fuel emergency": "low_fuel", "minimum fuel": "low_fuel",
 	"medical emergency": "medical", "medical": "medical",
 	"hydraulic failure": "hydraulic", "electrical failure": "electrical",

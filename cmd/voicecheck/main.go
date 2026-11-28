@@ -259,6 +259,7 @@ func cmdRecog(args []string) error {
 		mic     = fs.Bool("mic", false, "whisper: say each phrase into the microphone (Enter to start and to stop)")
 		device  = fs.String("device", "", "whisper -mic: microphone, an index or part of its name (voicecheck devices)")
 	)
+	fs.IntVar(&speakers, "speakers", 0, "-wav: render the phrases in turn with this many installed English voices and accents")
 	fs.Parse(args)
 	switch *side {
 	case "atc":
@@ -455,13 +456,14 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 	if err != nil {
 		return err
 	}
-	// One voice for the whole corpus: this measures the grammar, not the
-	// engine's tolerance for different speakers. Vary the voice deliberately
-	// with a second run if that is what you want to measure.
-	voice := pool.Assign("EGLL", voicegoio.Approach)
+	// One voice for the whole corpus measures the grammar, not the engine's
+	// tolerance for different speakers; -speakers N measures that, the
+	// phrases said in turn by N voices and accents.
+	vs := recogVoices(pool)
 
-	fmt.Printf("rendering with %s, feeding files to the engine\n", name)
+	fmt.Printf("rendering with %s, %d voice(s), feeding files to the engine\n", name, len(vs))
 	var total, exact int
+	perVoice := make([][2]int, len(vs))
 	for i, l := range lines {
 		if len(l.Callsigns) > 0 {
 			cs := make([]voicegoio.Callsign, 0, len(l.Callsigns))
@@ -475,6 +477,9 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 			continue
 		}
 		total++
+		vi := (total - 1) % len(vs)
+		voice := vs[vi]
+		perVoice[vi][1]++
 		path := filepath.Join(wavDir, fmt.Sprintf("%03d.wav", i))
 		// A line written for the typing harness ("CSA1234 ident") is
 		// rendered as a pilot says it ("CSA Lines one two tree four,
@@ -502,6 +507,7 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 		ok := tagsMatch(got.Tags, l.Tags)
 		if ok {
 			exact++
+			perVoice[vi][0]++
 		}
 		mark := "\x1b[31mFAIL\x1b[0m"
 		if ok {
@@ -516,6 +522,15 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 			if got.Text != "" {
 				fmt.Printf("     heard %q\n", got.Text)
 			}
+			if len(vs) > 1 {
+				fmt.Printf("     voice %s\n", voiceName(voice))
+			}
+		}
+	}
+	if len(vs) > 1 {
+		fmt.Println("\nper voice:")
+		for i, v := range vs {
+			fmt.Printf("  %2d/%-2d %s\n", perVoice[i][0], perVoice[i][1], voiceName(v))
 		}
 	}
 	return report(exact, total, minPct)
@@ -733,6 +748,55 @@ func cmdDownload(args []string) error {
 
 // controller: recog runs the controller grammar (-grammar controller).
 var controller bool
+
+// speakers: recog -wav renders the phrases in turn with this many installed
+// voices that speak English (-speakers), 0 or 1 for one voice.
+var speakers int
+
+// recogVoices are the voices recog -wav renders with: the pool's one, or
+// with -speakers the installed models that speak English (native, or a
+// foreign model reading English with its accent), one speaker of each,
+// spread over the multi speaker models.
+func recogVoices(pool *voices.Pool) []voicegoio.VoiceProfile {
+	one := []voicegoio.VoiceProfile{pool.Assign("EGLL", voicegoio.Approach)}
+	if speakers <= 1 {
+		return one
+	}
+	var out []voicegoio.VoiceProfile
+	for round := 0; len(out) < speakers && round < 8; round++ {
+		added := false
+		for _, m := range voices.Installed(pool.Manifest(), "") {
+			if !strings.HasPrefix(m.Accent, "en") && m.EspeakOverride == "" {
+				continue
+			}
+			n := max(m.SpeakerCount, 1)
+			if round >= n || len(out) >= speakers {
+				continue
+			}
+			id := round * n / 8
+			if len(m.Speakers) > 0 {
+				id = m.Speakers[(round*len(m.Speakers)/8)%len(m.Speakers)].ID
+			}
+			v := m.Profile(id)
+			if v.Accent == "" || !strings.HasPrefix(v.Accent, "en") {
+				v.Accent = "en-" + strings.ToUpper(strings.SplitN(m.Name, "_", 2)[0])
+			}
+			out = append(out, v)
+			added = true
+		}
+		if !added {
+			break
+		}
+	}
+	if len(out) == 0 {
+		return one
+	}
+	return out
+}
+
+func voiceName(v voicegoio.VoiceProfile) string {
+	return fmt.Sprintf("%s#%d (%s)", v.Model, v.SpeakerID, v.Accent)
+}
 
 // sapiOptions loads the grammar recog runs.
 func sapiOptions() sapi.Options {

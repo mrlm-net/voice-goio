@@ -88,7 +88,7 @@ Recording uses winmm's waveIn on Windows (`WaveInRecorder`; `MicRecorder(device)
 
 ## Deviations
 
-The parser accepts the small deviations real pilots make and the near misses a recogniser hears, realism first: sound-alike words ("iden" for ident, "stand by", "wilko", "request push"), "made a, made a" for mayday (twice at least), and a callsign whose airline word is near one on frequency ("lafansa four echo kilo", confidence 0.85). The flight number, a value and a choice between two aircraft are never guessed: what a controller would query stays `say_again`.
+The parser accepts the small deviations real pilots make and the near misses a recogniser hears, realism first: sound-alike words ("iden" for ident, "stand by", "wilko", "request push", "nier" for niner, "runway vacate"), "an" for "and" between taxiway letters, "made a, made a" for mayday (twice at least), and a callsign whose airline word is near one on frequency ("lafansa four echo kilo") or heard as two words ("speed bird"), confidence 0.85. The controller parser takes "clear to land" and "clear for takeoff" as the clearances. The flight number, a value and a choice between two aircraft are never guessed: what a controller would query stays `say_again`.
 
 ## Distress and urgency
 
