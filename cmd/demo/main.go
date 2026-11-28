@@ -33,6 +33,7 @@ import (
 	"github.com/mrlm-net/voice-goio/normalise"
 	"github.com/mrlm-net/voice-goio/stt/fake"
 	"github.com/mrlm-net/voice-goio/tts"
+	"github.com/mrlm-net/voice-goio/tts/piper"
 	"github.com/mrlm-net/voice-goio/voices"
 )
 
@@ -97,11 +98,14 @@ type rig struct {
 }
 
 func setup(o opts) (*rig, error) {
-	engine, name, err := tts.Open(tts.Options{Prefer: o.backend})
+	man, err := voices.LoadDefault()
 	if err != nil {
 		return nil, err
 	}
-	man, err := voices.LoadDefault()
+	pool := voices.NewPool(man, voices.PoolOptions{Seed: o.seed, AllowUnaudited: true})
+	// The pool resolves the model files: the manifest's paths and the
+	// espeak override a foreign voice reads English with.
+	engine, name, err := tts.Open(tts.Options{Prefer: o.backend, Piper: piper.Options{Resolver: pool}})
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +126,7 @@ func setup(o opts) (*rig, error) {
 		tts:    engine,
 		chain:  radio.Default(),
 		player: player,
-		pool:   voices.NewPool(man, voices.PoolOptions{Seed: o.seed, AllowUnaudited: true}),
+		pool:   pool,
 		name:   name,
 		ph:     o.phraseology,
 	}, nil

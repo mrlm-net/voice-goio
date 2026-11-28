@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,6 +34,7 @@ import (
 	"github.com/mrlm-net/voice-goio/stt/sapi"
 	"github.com/mrlm-net/voice-goio/stt/whisper"
 	"github.com/mrlm-net/voice-goio/tts"
+	"github.com/mrlm-net/voice-goio/tts/piper"
 	"github.com/mrlm-net/voice-goio/voices"
 )
 
@@ -129,7 +131,7 @@ func cmdSynth(args []string) error {
 	if err != nil {
 		return err
 	}
-	engine, name, err := tts.Open(tts.Options{Prefer: *backend})
+	engine, name, err := tts.Open(tts.Options{Prefer: *backend, Piper: piper.Options{Resolver: pool}})
 	if err != nil {
 		return err
 	}
@@ -202,7 +204,7 @@ func cmdAudit(args []string) error {
 	if !ok {
 		return fmt.Errorf("audit: %q is not in the manifest", *model)
 	}
-	engine, name, err := tts.Open(tts.Options{Prefer: *backend})
+	engine, name, err := tts.Open(tts.Options{Prefer: *backend, Piper: piper.Options{Resolver: pool}})
 	if err != nil {
 		return err
 	}
@@ -259,6 +261,7 @@ func cmdRecog(args []string) error {
 		mic     = fs.Bool("mic", false, "whisper: say each phrase into the microphone (Enter to start and to stop)")
 		device  = fs.String("device", "", "whisper -mic: microphone, an index or part of its name (voicecheck devices)")
 	)
+	fs.StringVar(&oneVoice, "voice", "", "-wav: render every phrase with this voice, model[#speaker] (voicecheck voices)")
 	fs.IntVar(&speakers, "speakers", 0, "-wav: render the phrases in turn with this many installed English voices and accents")
 	fs.Parse(args)
 	switch *side {
@@ -446,20 +449,22 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 	if err := os.MkdirAll(wavDir, 0o755); err != nil {
 		return err
 	}
-	engine, name, err := tts.Open(tts.Options{Prefer: ttsName})
-	if err != nil {
-		return err
-	}
-	defer engine.Close()
-
 	pool, err := loadPool("", "", 7)
 	if err != nil {
 		return err
 	}
+	engine, name, err := tts.Open(tts.Options{Prefer: ttsName, Piper: piper.Options{Resolver: pool}})
+	if err != nil {
+		return err
+	}
+	defer engine.Close()
 	// One voice for the whole corpus measures the grammar, not the engine's
 	// tolerance for different speakers; -speakers N measures that, the
 	// phrases said in turn by N voices and accents.
-	vs := recogVoices(pool)
+	vs, err := recogVoices(pool)
+	if err != nil {
+		return err
+	}
 
 	fmt.Printf("rendering with %s, %d voice(s), feeding files to the engine\n", name, len(vs))
 	var total, exact int
@@ -753,14 +758,33 @@ var controller bool
 // voices that speak English (-speakers), 0 or 1 for one voice.
 var speakers int
 
+// oneVoice: recog -wav renders every phrase with this voice (-voice),
+// model[#speaker].
+var oneVoice string
+
 // recogVoices are the voices recog -wav renders with: the pool's one, or
 // with -speakers the installed models that speak English (native, or a
 // foreign model reading English with its accent), one speaker of each,
 // spread over the multi speaker models.
-func recogVoices(pool *voices.Pool) []voicegoio.VoiceProfile {
+func recogVoices(pool *voices.Pool) ([]voicegoio.VoiceProfile, error) {
+	if oneVoice != "" {
+		name, idStr, _ := strings.Cut(oneVoice, "#")
+		m, ok := pool.Manifest().Model(name)
+		if !ok {
+			return nil, fmt.Errorf("-voice: %q is not in the manifest", name)
+		}
+		id := 0
+		if idStr != "" {
+			var err error
+			if id, err = strconv.Atoi(idStr); err != nil {
+				return nil, fmt.Errorf("-voice: speaker %q: %w", idStr, err)
+			}
+		}
+		return []voicegoio.VoiceProfile{m.Profile(id)}, nil
+	}
 	one := []voicegoio.VoiceProfile{pool.Assign("EGLL", voicegoio.Approach)}
 	if speakers <= 1 {
-		return one
+		return one, nil
 	}
 	var out []voicegoio.VoiceProfile
 	for round := 0; len(out) < speakers && round < 8; round++ {
@@ -789,9 +813,9 @@ func recogVoices(pool *voices.Pool) []voicegoio.VoiceProfile {
 		}
 	}
 	if len(out) == 0 {
-		return one
+		return one, nil
 	}
-	return out
+	return out, nil
 }
 
 func voiceName(v voicegoio.VoiceProfile) string {

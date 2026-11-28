@@ -343,7 +343,19 @@ func newSpeaker(opt Options, t timing) *Speaker {
 
 // openPiper opens piper with the default voice pool.
 func openPiper(opt Options) (*engine, error) {
-	e, backend, err := tts.Open(tts.Options{Piper: piper.Options{PiperPath: opt.PiperPath, VoicesDir: opt.VoicesDir}})
+	man, err := voices.LoadDefault()
+	if err != nil {
+		return nil, err
+	}
+	exclude := opt.Exclude
+	if !opt.Accents {
+		exclude = append(append([]string(nil), exclude...), voices.AccentModels(man)...)
+	}
+	pool := voices.NewPool(man, voices.PoolOptions{Seed: time.Now().UnixNano(), AllowUnaudited: true, Dir: opt.VoicesDir, Exclude: exclude, FemaleShare: FemaleShare})
+	// The pool resolves the model files: the manifest's paths (a model
+	// named apart from its file) and the espeak override a foreign voice
+	// reads English with, which piper's own directory search knows nothing of.
+	e, backend, err := tts.Open(tts.Options{Piper: piper.Options{PiperPath: opt.PiperPath, VoicesDir: opt.VoicesDir, Resolver: pool}})
 	if err != nil {
 		return nil, err
 	}
@@ -354,16 +366,6 @@ func openPiper(opt Options) (*engine, error) {
 		}
 		return nil, ErrNoVoice
 	}
-	man, err := voices.LoadDefault()
-	if err != nil {
-		e.Close()
-		return nil, err
-	}
-	exclude := opt.Exclude
-	if !opt.Accents {
-		exclude = append(append([]string(nil), exclude...), voices.AccentModels(man)...)
-	}
-	pool := voices.NewPool(man, voices.PoolOptions{Seed: time.Now().UnixNano(), AllowUnaudited: true, Dir: opt.VoicesDir, Exclude: exclude, FemaleShare: FemaleShare})
 	return &engine{tts: e, backend: backend, pool: pool, chain: radio.Default(), norm: normalise.New()}, nil
 }
 

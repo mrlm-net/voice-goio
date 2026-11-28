@@ -65,6 +65,7 @@ go run ./cmd/voicecheck recog -backend whisper -mic -device "PRO X" -model ggml-
 | `-wav` | | Render each phrase to a WAV here and feed the file to the engine (unattended SAPI and whisper runs). |
 | `-tts` | | The backend that renders those phrases (`piper`; the fake backend renders silence). |
 | `-speakers` | `0` | With `-wav`: the phrases said in turn by this many installed English voices and accents (one speaker per model, foreign models reading English with their accent), with a per-voice summary. 0 or 1: one voice, which measures the grammar rather than the speakers. |
+| `-voice` | | With `-wav`: every phrase in this voice, `model[#speaker]` (an accent: `cs_CZ-jirka-medium`). |
 | `-model`, `-bin` | | whisper: the ggml model and whisper-cli (default beside the model, else PATH). |
 | `-mic`, `-device` | | whisper: say each phrase into the microphone, Enter to start and to stop; `-device` an index or part of the name (`voicecheck devices`). |
 

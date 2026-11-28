@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Fixed
+- `speaker`, `voicecheck`, `cmd/demo`: piper resolves models through the voice pool. A foreign voice now reads English with its espeak override (the accent swap); before, it read English as German or Czech, and whisper recognised half as much of it (Czech voice 12 → 25 of 54). The Polish and Spanish accent models, named apart from their files, are found at all.
+
+### Added
+- `voicecheck recog -voice model[#speaker]`: the corpus in one chosen voice.
+
 ## [0.22.0] - 2026-11-28
 
 ### Added
