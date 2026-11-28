@@ -1,9 +1,66 @@
 package whisper
 
 import (
+	"regexp"
+	"sort"
 	"strings"
 	"unicode"
+
+	voicegoio "github.com/mrlm-net/voice-goio"
+	"github.com/mrlm-net/voice-goio/normalise"
 )
+
+// thousands is a number written with a thousands separator: "15,000".
+var thousands = regexp.MustCompile(`\b(\d{1,3}),(\d{3})\b`)
+
+// Written rewrites what whisper writes as text back to what was said, for
+// the aircraft on frequency: an identifier ("DLH4EK", "CSA 1234",
+// "OK-ABC") becomes its spoken callsign ("Lufthansa four echo kilo"),
+// and a thousands separator is dropped ("15,000" is one number). Spoken
+// then spells the rest.
+func Written(text string, callsigns []voicegoio.Callsign) string {
+	text = thousands.ReplaceAllString(text, "${1}${2}")
+	cs := append([]voicegoio.Callsign(nil), callsigns...)
+	// Longest first: "CSA1234" before a "CSA12" on frequency too.
+	sort.SliceStable(cs, func(i, j int) bool { return len(cs[i].ICAO) > len(cs[j].ICAO) })
+	for _, c := range cs {
+		re := writtenID(c.ICAO)
+		if re == nil {
+			continue
+		}
+		s := c.Spoken
+		if s == "" {
+			s = normalise.SpokenCallsign(c.ICAO)
+		}
+		text = re.ReplaceAllLiteralString(text, s)
+	}
+	return text
+}
+
+// writtenID matches an identifier as whisper may write it: the letter
+// prefix and the rest together or apart ("CSA1234", "CSA 1234"), a
+// registration with or without its hyphen ("OK-ABC", "OK ABC", "OKABC").
+func writtenID(icao string) *regexp.Regexp {
+	icao = strings.ToUpper(strings.TrimSpace(icao))
+	if icao == "" {
+		return nil
+	}
+	var parts []string
+	if a, b, ok := strings.Cut(icao, "-"); ok {
+		parts = []string{a, b}
+	} else {
+		i := strings.IndexFunc(icao, func(r rune) bool { return r >= '0' && r <= '9' })
+		if i > 0 {
+			parts = []string{icao[:i], icao[i:]}
+		} else {
+			parts = []string{icao}
+		}
+	}
+	for i := range parts {
+		parts[i] = regexp.QuoteMeta(parts[i])
+	}
+	return regexp.MustCompile(`(?i)\b` + strings.Join(parts, `[\s-]?`) + `\b`)
+}
 
 var digitSaid = [10]string{"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 
@@ -15,7 +72,7 @@ var digitSaid = [10]string{"zero", "one", "two", "three", "four", "five", "six",
 func Spoken(transcript string) string {
 	var out []string
 	for _, w := range strings.FieldsFunc(transcript, func(r rune) bool {
-		return unicode.IsSpace(r) || r == ',' || r == '-' || r == '?' || r == '!' || r == ';' || r == ':' || r == '"'
+		return unicode.IsSpace(r) || r == ',' || r == '-' || r == '/' || r == '?' || r == '!' || r == ';' || r == ':' || r == '"'
 	}) {
 		w = strings.ToLower(strings.TrimRight(w, "."))
 		if w == "" {

@@ -7,6 +7,10 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Fixed
+- `stt/whisper`: a callsign whisper writes as its identifier ("DLH4EK", "CSA 1234", "OK-ABC") is recognised as the aircraft on frequency (`Written`); "15,000" is one number and "/" separates words. "ident" is in the default prompt (#59).
+- `voicecheck recog`: a corpus line written with digits ("CSA1234 ident") is rendered as a pilot says it (normalised), not as piper reads the digits. Offline on Windows (whisper CPU, piper): pilot corpus 50–51/54 on base.en (was 39), controller 29/31.
+
 ## [0.19.0] - 2026-11-25
 
 ### Added
