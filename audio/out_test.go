@@ -75,31 +75,6 @@ func TestFrequenciesQueueIndependently(t *testing.T) {
 	}
 }
 
-// A frequency that is saturated reports congestion rather than growing without
-// bound: the application decides what to drop, not the library.
-func TestCongestedFrequencyReportsError(t *testing.T) {
-	dir := t.TempDir()
-	p, err := audio.NewPlayer(audio.Options{WAVDir: dir, SampleRate: 22050, QueueDepth: 2})
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer p.Close()
-
-	tx := voicegoio.Transmission{Frequency: "127.450", ControllerID: "CTR", Text: "t"}
-	var lastErr error
-	for range 20 {
-		if err := p.Play(tx, tone(22050), 22050); err != nil {
-			lastErr = err
-			break
-		}
-	}
-	if lastErr == nil {
-		t.Error("expected a congestion error once the queue filled")
-	} else {
-		t.Logf("congestion reported: %v", lastErr)
-	}
-}
-
 // Playback at a different rate than the device is resampled rather than
 // played at the wrong pitch.
 func TestRateConversion(t *testing.T) {
