@@ -7,6 +7,12 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Added
+- `voicecheck recog -speakers N`: the corpus said in turn by N installed English voices and accents, with a per-voice summary.
+
+### Changed
+- `stt/fake`: more pilot deviations accepted, realism first: "nier" for niner, "runway vacate", "an" for "and" between taxiway letters, "smoking" as the smoke nature, an airline word heard as two words ("speed bird", confidence 0.85); the controller parser takes "clear to land" and "clear for takeoff".
+
 ## [0.21.1] - 2026-11-28
 
 ### Fixed

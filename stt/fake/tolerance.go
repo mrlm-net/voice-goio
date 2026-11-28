@@ -17,6 +17,7 @@ var alike = map[string]string{
 	"squak":       "squawk",
 	"affirmative": "affirm",
 	"centre":      "center",
+	"nier":        "niner",
 }
 
 // alikePairs are two words said or heard for others.
@@ -58,6 +59,15 @@ func tolerate(toks []string) []string {
 				continue
 			}
 		}
+		// "via bravo an alpha": and, between two taxiway letters only.
+		if toks[i] == "an" && len(out) > 0 && i+1 < len(toks) {
+			_, prevLetter := letterWord[out[len(out)-1]]
+			_, nextLetter := letterWord[toks[i+1]]
+			if prevLetter && nextLetter {
+				out = append(out, "and")
+				continue
+			}
+		}
 		if w, ok := alike[toks[i]]; ok {
 			out = append(out, w)
 			continue
@@ -88,15 +98,23 @@ func (p *Parser) matchCallsignLoose(toks []string) (string, []string) {
 		if len(words) < 2 || len(words[0]) < 4 || digitOrLetter(words[0]) {
 			continue
 		}
-		for start := 0; start+len(words) <= len(toks); start++ {
-			if !nearWord(toks[start], words[0]) || !equal(toks[start+1:start+len(words)], words[1:]) {
-				continue
-			}
-			if found != "" && found != icao {
-				return "", toks // two aircraft: not guessed
-			}
-			if found == "" || len(words) > n {
-				found, at, n = icao, start, len(words)
+		for start := 0; start < len(toks); start++ {
+			// The airline word in one token, or heard as two ("speed bird").
+			for split := 1; split <= 2; split++ {
+				end := start + split + len(words) - 1
+				if end > len(toks) {
+					continue
+				}
+				airline := strings.Join(toks[start:start+split], "")
+				if !nearWord(airline, words[0]) || !equal(toks[start+split:end], words[1:]) {
+					continue
+				}
+				if found != "" && found != icao {
+					return "", toks // two aircraft: not guessed
+				}
+				if found == "" || end-start > n {
+					found, at, n = icao, start, end-start
+				}
 			}
 		}
 	}
