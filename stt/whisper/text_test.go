@@ -30,6 +30,7 @@ func TestWritten(t *testing.T) {
 		"CSA 1234 with you, 15,000.":              normalise.SpokenCallsign("CSA1234") + " with you, 15000.",
 		"Heathrow Centre, BAW 123/15000 with you": "Heathrow Centre, Speedbird one two three/15000 with you",
 		"ok abc ready":                            normalise.SpokenCallsign("OK-ABC") + " ready",
+		"OK, ABC cleared to land":                 normalise.SpokenCallsign("OK-ABC") + " cleared to land",
 		"heading 123":                             "heading 123",
 	} {
 		if got := Written(in, cs); got != want {

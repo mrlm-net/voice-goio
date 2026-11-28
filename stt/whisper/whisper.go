@@ -256,7 +256,7 @@ const DefaultPrompt = "Radio telephony, ICAO phraseology. Alpha, Bravo, Charlie,
 	"India, Juliett, Kilo, Lima, Mike, November, Oscar, Papa, Quebec, Romeo, Sierra, Tango, Uniform, Victor, " +
 	"Whiskey, X-ray, Yankee, Zulu. Niner, tree, fife, decimal. Flight level, squawk, QNH, runway, holding point, " +
 	"line up and wait, cleared for take-off, cleared to land, wind, knots, pushback, start-up, taxi via, hold short, " +
-	"cross runway, contact tower, go around, vacate, ident, wilco, roger, say again."
+	"cross runway, contact tower, go around, vacate, ident, wilco, roger, say again. Mayday, mayday, mayday. Pan pan."
 
 func (r *Recognizer) prompt() string {
 	p := r.opt.Prompt

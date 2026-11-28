@@ -59,7 +59,7 @@ func writtenID(icao string) *regexp.Regexp {
 	for i := range parts {
 		parts[i] = regexp.QuoteMeta(parts[i])
 	}
-	return regexp.MustCompile(`(?i)\b` + strings.Join(parts, `[\s-]?`) + `\b`)
+	return regexp.MustCompile(`(?i)\b` + strings.Join(parts, `(?:,?\s|-)?`) + `\b`)
 }
 
 var digitSaid = [10]string{"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}

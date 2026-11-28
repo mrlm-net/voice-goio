@@ -513,6 +513,9 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 		if !ok {
 			fmt.Printf("     want intent=%s callsign=%s value=%s\n",
 				l.Tags[voicegoio.TagIntent], l.Tags[voicegoio.TagCallsign], l.Tags[voicegoio.TagValue])
+			if got.Text != "" {
+				fmt.Printf("     heard %q\n", got.Text)
+			}
 		}
 	}
 	return report(exact, total, minPct)

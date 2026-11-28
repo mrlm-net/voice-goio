@@ -28,7 +28,7 @@ func (r *Recognizer) UseControllerGrammar() {
 // one instruction, its value and the further tags.
 func (p *Parser) parseController(text string) voicegoio.Recognition {
 	rec := voicegoio.Recognition{Text: text, Tags: map[string]string{}}
-	callsign, rest := p.matchCallsign(controllerTokens(tokenize(text)))
+	callsign, rest, loose := p.matchCallsign(controllerTokens(tokenize(text)))
 	if callsign != "" {
 		rec.Tags[voicegoio.TagCallsign] = callsign
 	}
@@ -48,6 +48,8 @@ func (p *Parser) parseController(text string) voicegoio.Recognition {
 		rec.Tags[voicegoio.TagValue] = value
 	}
 	switch {
+	case callsign != "" && loose:
+		rec.Confidence = 0.85
 	case callsign != "":
 		rec.Confidence = 0.95
 	default:

@@ -87,7 +87,7 @@ func (p *Parser) Parse(text string) voicegoio.Recognition {
 	toks := tokenize(text)
 	rec := voicegoio.Recognition{Text: text, Tags: map[string]string{}}
 
-	callsign, rest := p.matchCallsign(toks)
+	callsign, rest, loose := p.matchCallsign(toks)
 	if callsign != "" {
 		rec.Tags[voicegoio.TagCallsign] = callsign
 	}
@@ -128,6 +128,8 @@ func (p *Parser) Parse(text string) voicegoio.Recognition {
 		}
 	}
 	switch {
+	case callsign != "" && intent != voicegoio.IntentSayAgain && loose:
+		rec.Confidence = 0.85
 	case callsign != "" && intent != voicegoio.IntentSayAgain:
 		rec.Confidence = 0.95
 	case intent == "mayday" || intent == "pan_pan":
@@ -149,7 +151,7 @@ func tokenize(s string) []string {
 		}
 		return ' '
 	}, s)
-	return strings.Fields(s)
+	return tolerate(strings.Fields(s))
 }
 
 // matchCallsign finds the longest roster entry anywhere in the transmission and
@@ -159,7 +161,10 @@ func tokenize(s string) []string {
 // first and the callsign after it — "mayday mayday mayday, Speedbird one two
 // three, engine failure" — and that is the one transmission that must not be
 // missed.
-func (p *Parser) matchCallsign(toks []string) (string, []string) {
+//
+// loose: no entry was said exactly, and one was matched by its airline
+// word alone (matchCallsignLoose).
+func (p *Parser) matchCallsign(toks []string) (icao string, rest []string, loose bool) {
 	// Down to one token: a spoken callsign is always several words, but a
 	// typed identifier is one.
 	for n := min(len(toks), 8); n >= 1; n-- {
@@ -171,10 +176,13 @@ func (p *Parser) matchCallsign(toks []string) (string, []string) {
 			rest := make([]string, 0, len(toks)-n)
 			rest = append(rest, toks[:start]...)
 			rest = append(rest, toks[start+n:]...)
-			return icao, rest
+			return icao, rest, false
 		}
 	}
-	return "", toks
+	if icao, rest := p.matchCallsignLoose(toks); icao != "" {
+		return icao, rest, true
+	}
+	return "", toks, false
 }
 
 // digits collects consecutive spoken digits starting at i.
@@ -491,7 +499,7 @@ func parseBody(toks []string) (intent, value string) {
 func parseRequest(toks []string) (intent, value string) {
 	if _, ok := any(toks, "request", "requesting", "we would like"); ok {
 		switch {
-		case has(toks, "pushback", "push back"):
+		case has(toks, "pushback", "push back", "push"):
 			return "request_pushback", ""
 		case has(toks, "taxi"):
 			return "request_taxi", ""
