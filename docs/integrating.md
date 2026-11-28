@@ -70,6 +70,7 @@ Remove it, or drop the `replace`, before a release build.
 | `v0.18.3` | `normalise`: an intersection taxiway after "runway <n> at" spelled ("runway one zero at alpha"). |
 | `v0.19.0` | `speaker`: `Utterance.Hooks` (`OnStart`, `OnDone`) per line, `StopChannel` (the intercom or the PA faded out over 200 ms, its queue dropped); `audio.Player.Stop`. |
 | `v0.20.0` | `stt/whisper` on Windows: microphone recording (`WaveInRecorder`, `MicRecorder`, `InputDevices`, `Recognizer.Warm`), callsigns written as codes (`Written`); `stt/fake`: small pilot deviations accepted, realism first; `voicecheck recog -mic`. |
+| `v0.21.0` | `grammar.Find`: a command phrase anywhere in free text (whisper), realism first. |
 
 The full notes are in the [changelog](/docs/changelog).
 
