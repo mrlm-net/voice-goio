@@ -7,6 +7,10 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Added
+- `stt/whisper`: microphone recording on Windows through winmm's waveIn (`WaveInRecorder`, the default there), `InputDevices`, `MicRecorder(device)` that keeps the microphone open between presses with 300 ms of pre-roll, and `Recognizer.Warm` to open it before the first press (a wireless headset delivers its first sample 0.8 to 1.1 s after opening). `Recognizer.Close` closes a recorder that is an `io.Closer` (#61).
+- `voicecheck recog -backend whisper -mic [-device <name>]`: say each phrase, Enter to start and to stop, with the time from release to result; the SAPI live run prints it too. `voicecheck devices` lists whisper's microphones.
+
 ### Fixed
 - `stt/whisper`: a callsign whisper writes as its identifier ("DLH4EK", "CSA 1234", "OK-ABC") is recognised as the aircraft on frequency (`Written`); "15,000" is one number and "/" separates words. "ident" is in the default prompt (#59).
 - `voicecheck recog`: a corpus line written with digits ("CSA1234 ident") is rendered as a pilot says it (normalised), not as piper reads the digits. Offline on Windows (whisper CPU, piper): pilot corpus 50–51/54 on base.en (was 39), controller 29/31.

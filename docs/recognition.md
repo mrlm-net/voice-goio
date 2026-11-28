@@ -82,7 +82,7 @@ model, _ := whisper.InstallModel(ctx, "bin", "base.en", nil)
 rec, err := whisper.New(whisper.Options{Bin: bin, Model: model}) // Controller: true for the controller grammar
 ```
 
-Recording uses `arecord` on Linux and sox's `rec` on macOS (`brew install sox`); `Options.Recorder` replaces it. `RecognizeFile` tags a 16 kHz WAV directly. `voicecheck whisper` installs both, and `voicecheck recog -backend whisper -bin … -model …` renders the corpus with the TTS and runs it through whisper.
+Recording uses winmm's waveIn on Windows (`WaveInRecorder`; `MicRecorder(device)` keeps the microphone open between presses with 300 ms of pre-roll, because a device can take up to a second to deliver its first sample: call `Recognizer.Warm` when the radio is switched on; `InputDevices` lists the microphones), `arecord` on Linux and sox's `rec` on macOS (`brew install sox`); `Options.Recorder` replaces it. `RecognizeFile` tags a 16 kHz WAV directly. `voicecheck whisper` installs both, and `voicecheck recog -backend whisper -bin … -model …` renders the corpus with the TTS and runs it through whisper; with `-mic [-device <name>]` you say each phrase (Enter to start and to stop) and the time from release to result is printed.
 
 ## Distress and urgency
 
