@@ -7,6 +7,8 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-28
+
 ### Added
 - `voicecheck recog -speakers N`: the corpus said in turn by N installed English voices and accents, with a per-voice summary.
 
