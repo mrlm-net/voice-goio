@@ -27,6 +27,7 @@ import (
 	"github.com/mrlm-net/voice-goio/audio/radio"
 	"github.com/mrlm-net/voice-goio/grammar"
 	"github.com/mrlm-net/voice-goio/internal/wav"
+	"github.com/mrlm-net/voice-goio/normalise"
 	"github.com/mrlm-net/voice-goio/stt/fake"
 	"github.com/mrlm-net/voice-goio/stt/sapi"
 	"github.com/mrlm-net/voice-goio/stt/whisper"
@@ -440,7 +441,15 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 		}
 		total++
 		path := filepath.Join(wavDir, fmt.Sprintf("%03d.wav", i))
-		pcm, err := engine.Synthesize(context.Background(), voice, l.Text)
+		// A line written for the typing harness ("CSA1234 ident") is
+		// rendered as a pilot says it ("CSA Lines one two tree four,
+		// ident"), not as piper reads the digits; a line already spoken
+		// has no digit and is left as it is.
+		say := l.Text
+		if strings.ContainsAny(say, "0123456789") {
+			say = normalise.Spoken(say, voicegoio.ICAO)
+		}
+		pcm, err := engine.Synthesize(context.Background(), voice, say)
 		if err != nil {
 			return fmt.Errorf("render %q: %w", l.Text, err)
 		}

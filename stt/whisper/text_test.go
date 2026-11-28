@@ -1,6 +1,11 @@
 package whisper
 
-import "testing"
+import (
+	"testing"
+
+	voicegoio "github.com/mrlm-net/voice-goio"
+	"github.com/mrlm-net/voice-goio/normalise"
+)
 
 func TestSpoken(t *testing.T) {
 	for in, want := range map[string]string{
@@ -13,6 +18,21 @@ func TestSpoken(t *testing.T) {
 		"  ":                                              "",
 	} {
 		if got := Spoken(in); got != want {
+			t.Errorf("%q\n  got  %q\n  want %q", in, got, want)
+		}
+	}
+}
+
+func TestWritten(t *testing.T) {
+	cs := []voicegoio.Callsign{{ICAO: "DLH4EK"}, {ICAO: "CSA1234"}, {ICAO: "BAW123", Spoken: "Speedbird one two three"}, {ICAO: "OK-ABC"}}
+	for in, want := range map[string]string{
+		"DLH4EK turn left heading 240.":           normalise.SpokenCallsign("DLH4EK") + " turn left heading 240.",
+		"CSA 1234 with you, 15,000.":              normalise.SpokenCallsign("CSA1234") + " with you, 15000.",
+		"Heathrow Centre, BAW 123/15000 with you": "Heathrow Centre, Speedbird one two three/15000 with you",
+		"ok abc ready":                            normalise.SpokenCallsign("OK-ABC") + " ready",
+		"heading 123":                             "heading 123",
+	} {
+		if got := Written(in, cs); got != want {
 			t.Errorf("%q\n  got  %q\n  want %q", in, got, want)
 		}
 	}
