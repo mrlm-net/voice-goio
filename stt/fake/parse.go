@@ -386,7 +386,7 @@ func parseBody(toks []string) (intent, value string) {
 		return "readback_clearance", ""
 	}
 
-	if i, ok := any(toks, "climbing to", "descending to", "descent to", "climbing", "descending",
+	if i, ok := any(toks, "climbing to", "descending to", "descent to", "down to", "climbing", "descending",
 		"climb to", "descend to", "maintaining", "maintain", "climb", "descend", "descent"); ok {
 		if v, _ := level(toks, skipWord(toks, i, "to")); v != "" {
 			return "readback_altitude", v

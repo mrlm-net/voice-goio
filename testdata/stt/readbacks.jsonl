@@ -50,7 +50,7 @@
 {"text": "Speedbird one two three souls on board one four seven fuel remaining fife thousand kilos", "tags": {"intent": "report_souls", "callsign": "BAW123", "value": "147"}}
 {"text": "DLH4EK request turn 20 degrees to the right due to weather conditions", "tags": {"intent": "request_deviation", "callsign": "DLH4EK", "value": "20R"}}
 {"text": "Speedbird one two three request deviation two zero degrees left due to weather", "tags": {"intent": "request_deviation", "callsign": "BAW123", "value": "20L"}}
-{"text": "down to FL100, BAW123", "tags": {"intent": "say_again", "callsign": "BAW123", "value": "", "reason": "off_grammar"}}
+{"text": "down to FL100, BAW123", "tags": {"intent": "readback_altitude", "callsign": "BAW123", "value": "FL100"}}
 {"text": "Heathrow center, BAW123 15000 with you", "tags": {"intent": "checkin", "callsign": "BAW123", "value": "15000"}}
 {"text": "descent to FL100 QNH 1013 for CSA1234", "tags": {"intent": "readback_altitude", "callsign": "CSA1234", "value": "FL100"}}
 {"text": "Speedbird one two three descending flight level one zero zero QNH one zero one tree", "tags": {"intent": "readback_altitude", "callsign": "BAW123", "value": "FL100"}}

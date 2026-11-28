@@ -7,6 +7,11 @@ compatibility surface.
 
 ## [Unreleased]
 
+## [0.21.1] - 2026-11-28
+
+### Fixed
+- `stt/fake`: "down to <level>", a common pilot deviation for "descending to", is a level readback; said with "flight level" it was tagged a check-in (#69).
+
 ## [0.21.0] - 2026-11-28
 
 ### Added
