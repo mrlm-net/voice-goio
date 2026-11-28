@@ -7,6 +7,9 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Added
+- `voicecheck recog -reuse`: keep the WAVs already rendered, to compare models or engines on the same audio (piper renders differently each time).
+
 ## [0.22.1] - 2026-11-28
 
 ### Fixed

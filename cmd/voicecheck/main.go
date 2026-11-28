@@ -261,6 +261,7 @@ func cmdRecog(args []string) error {
 		mic     = fs.Bool("mic", false, "whisper: say each phrase into the microphone (Enter to start and to stop)")
 		device  = fs.String("device", "", "whisper -mic: microphone, an index or part of its name (voicecheck devices)")
 	)
+	fs.BoolVar(&reuse, "reuse", false, "-wav: keep the WAVs already in the folder (same corpus and voice), to compare engines or models on the same audio")
 	fs.StringVar(&oneVoice, "voice", "", "-wav: render every phrase with this voice, model[#speaker] (voicecheck voices)")
 	fs.IntVar(&speakers, "speakers", 0, "-wav: render the phrases in turn with this many installed English voices and accents")
 	fs.Parse(args)
@@ -494,16 +495,8 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 		if strings.ContainsAny(say, "0123456789") {
 			say = normalise.Spoken(say, voicegoio.ICAO)
 		}
-		pcm, err := engine.Synthesize(context.Background(), voice, say)
-		if err != nil {
+		if err := renderPhrase(engine, voice, say, path, rate); err != nil {
 			return fmt.Errorf("render %q: %w", l.Text, err)
-		}
-		sr := engine.SampleRate(voice)
-		if rate != 0 && rate != sr {
-			pcm, sr = resample(pcm, sr, rate), rate
-		}
-		if err := wav.WriteFile(path, pcm, sr); err != nil {
-			return err
 		}
 		got, err := rec.RecognizeFile(path)
 		if err != nil {
@@ -539,6 +532,26 @@ func recogFiles(lines []fake.ScriptLine, minPct float64, wavDir, ttsName string,
 		}
 	}
 	return report(exact, total, minPct)
+}
+
+// renderPhrase writes say in voice to path, at rate (0 the engine's).
+// With -reuse a WAV already there is kept: piper renders differently each
+// time, and two engines or models are compared on the same audio.
+func renderPhrase(engine voicegoio.TTS, voice voicegoio.VoiceProfile, say, path string, rate int) error {
+	if reuse {
+		if _, err := os.Stat(path); err == nil {
+			return nil
+		}
+	}
+	pcm, err := engine.Synthesize(context.Background(), voice, say)
+	if err != nil {
+		return err
+	}
+	sr := engine.SampleRate(voice)
+	if rate != 0 && rate != sr {
+		pcm, sr = resample(pcm, sr, rate), rate
+	}
+	return wav.WriteFile(path, pcm, sr)
 }
 
 func tagsMatch(got, want map[string]string) bool {
@@ -761,6 +774,9 @@ var speakers int
 // oneVoice: recog -wav renders every phrase with this voice (-voice),
 // model[#speaker].
 var oneVoice string
+
+// reuse: recog -wav keeps the WAVs already rendered (-reuse).
+var reuse bool
 
 // recogVoices are the voices recog -wav renders with: the pool's one, or
 // with -speakers the installed models that speak English (native, or a
