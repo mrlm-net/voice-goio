@@ -84,6 +84,10 @@ rec, err := whisper.New(whisper.Options{Bin: bin, Model: model}) // Controller: 
 
 Recording uses winmm's waveIn on Windows (`WaveInRecorder`; `MicRecorder(device)` keeps the microphone open between presses with 300 ms of pre-roll, because a device can take up to a second to deliver its first sample: call `Recognizer.Warm` when the radio is switched on; `InputDevices` lists the microphones), `arecord` on Linux and sox's `rec` on macOS (`brew install sox`); `Options.Recorder` replaces it. `RecognizeFile` tags a 16 kHz WAV directly. `voicecheck whisper` installs both, and `voicecheck recog -backend whisper -bin … -model …` renders the corpus with the TTS and runs it through whisper; with `-mic [-device <name>]` you say each phrase (Enter to start and to stop) and the time from release to result is printed.
 
+## Deviations
+
+The parser accepts the small deviations real pilots make and the near misses a recogniser hears, realism first: sound-alike words ("iden" for ident, "stand by", "wilko", "request push"), "made a, made a" for mayday (twice at least), and a callsign whose airline word is near one on frequency ("lafansa four echo kilo", confidence 0.85). The flight number, a value and a choice between two aircraft are never guessed: what a controller would query stays `say_again`.
+
 ## Distress and urgency
 
 `MAYDAY` and `PAN PAN` are recognised by both backends and outrank every other intent, including `say_again`: a transmission containing "mayday" is a mayday whatever else is in it. The callsign is matched *anywhere* in the transmission, because a distress call puts the signal first, and it is reported confidently even when the aircraft is not on the roster — an aircraft in trouble may have just arrived on the frequency. `Tags[value]` carries the nature (`engine_failure`, `low_fuel`, `medical`, …) on a best effort basis; an unrecognised nature never downgrades the intent.

@@ -8,6 +8,7 @@ compatibility surface.
 ## [Unreleased]
 
 ### Added
+- `stt/fake` (and so `stt/whisper`): small deviations pilots make and near misses a recogniser hears are accepted, realism first (#63). Sound-alike words map to the phraseology word ("iden"/"idon" ident, "stand by", "wilko", "requests", "request push" pushback, "approve", "soles"); "made a, made a" (said twice at least) is mayday; "for" is four in a run of digits after squawk. A callsign whose airline word is near one on frequency ("lafansa four echo kilo") is that aircraft at confidence 0.85, when every other word is exact and only one aircraft matches. The flight number, a value or a choice between two aircraft is never guessed. Mayday and pan pan are in whisper's default prompt; `Written` accepts "OK, ABC". `voicecheck recog` prints what was heard on a FAIL.
 - `stt/whisper`: microphone recording on Windows through winmm's waveIn (`WaveInRecorder`, the default there), `InputDevices`, `MicRecorder(device)` that keeps the microphone open between presses with 300 ms of pre-roll, and `Recognizer.Warm` to open it before the first press (a wireless headset delivers its first sample 0.8 to 1.1 s after opening). `Recognizer.Close` closes a recorder that is an `io.Closer` (#61).
 - `voicecheck recog -backend whisper -mic [-device <name>]`: say each phrase, Enter to start and to stop, with the time from release to result; the SAPI live run prints it too. `voicecheck devices` lists whisper's microphones.
 
