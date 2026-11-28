@@ -38,6 +38,8 @@ rec, err := sapi.New(sapi.Options{Grammar: g}) // r.Tags["intent"] == "gear_up"
 intent, ok := grammar.Match(cmds, "Gear up")  // typed: "gear_up", true
 ```
 
+With a recogniser that transcribes free text (`stt/whisper`), use `grammar.Find(cmds, whisper.Spoken(r.Text))`: the phrase may stand anywhere in what was said ("Prague Ground, OK-ABC, request taxi" is `request_taxi`), the longest phrase wins and a long word may be slightly misheard ("pushbak"). Realism first: a one-word phrase ("on", "zero") only when it is all that was said, at least one word of a phrase exact, and two intents matched equally well are not guessed.
+
 `grammar.Words(s)` is the word split both use: lower case words, punctuation dropped, apostrophes kept (`"Doors closed."` is `doors`, `closed`).
 
 A hand-written SRGS file works too (`Options.GrammarPath`): its public root rule must be `transmission`, its tags set `out.intent`, and a `callsign` rule is what `SetCallsigns` rebuilds.

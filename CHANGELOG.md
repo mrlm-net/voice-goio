@@ -7,6 +7,9 @@ compatibility surface.
 
 ## [Unreleased]
 
+### Added
+- `grammar.Find`: a command phrase anywhere in free text (station and callsign around it), longest first, long words slightly misheard accepted; a one-word phrase only as the whole text, a tie between intents not guessed (#66).
+
 ## [0.20.0] - 2026-11-28
 
 ### Added
