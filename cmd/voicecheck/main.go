@@ -14,6 +14,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -255,6 +256,8 @@ func cmdRecog(args []string) error {
 		side    = fs.String("grammar", "atc", "atc (pilot speech) or controller (TWR and GND instructions)")
 		model   = fs.String("model", "", "whisper: ggml model file (whisper.InstallModel)")
 		bin     = fs.String("bin", "", "whisper: whisper-cli (default: beside the model, else PATH)")
+		mic     = fs.Bool("mic", false, "whisper: say each phrase into the microphone (Enter to start and to stop)")
+		device  = fs.String("device", "", "whisper -mic: microphone, an index or part of its name (voicecheck devices)")
 	)
 	fs.Parse(args)
 	switch *side {
@@ -291,9 +294,19 @@ func cmdRecog(args []string) error {
 		}
 		return recogSAPI(lines, *minPct)
 	case "whisper":
-		rec, err := whisper.New(whisper.Options{Bin: *bin, Model: *model, Controller: controller})
+		opt := whisper.Options{Bin: *bin, Model: *model, Controller: controller}
+		if *mic {
+			opt.Recorder = whisper.MicRecorder(*device)
+		}
+		rec, err := whisper.New(opt)
 		if err != nil {
 			return err
+		}
+		if *mic {
+			if err := rec.Warm(); err != nil {
+				return err
+			}
+			return recogLive(rec, lines, *minPct, true)
 		}
 		if *wavDir == "" {
 			*wavDir = filepath.Join(os.TempDir(), "voicecheck-whisper")
@@ -350,7 +363,14 @@ func recogSAPI(lines []fake.ScriptLine, minPct float64) error {
 	if err != nil {
 		return err
 	}
+	return recogLive(rec, lines, minPct, false)
+}
+
+// recogLive has the operator say each phrase into the microphone: for 6 s,
+// or with enter between Enter presses.
+func recogLive(rec voicegoio.STT, lines []fake.ScriptLine, minPct float64, enter bool) error {
 	defer rec.Close()
+	in := bufio.NewReader(os.Stdin)
 
 	var total, exact int
 	for _, l := range lines {
@@ -366,15 +386,30 @@ func recogSAPI(lines []fake.ScriptLine, minPct float64) error {
 			continue
 		}
 		total++
-		fmt.Printf("\nSay: \x1b[1m%s\x1b[0m\n", l.Text)
+		say := l.Text
+		if strings.ContainsAny(say, "0123456789") {
+			say = normalise.Spoken(say, voicegoio.ICAO)
+		}
+		fmt.Printf("\nSay: \x1b[1m%s\x1b[0m\n", say)
+		if enter {
+			fmt.Print("  Enter, speak, Enter ")
+			in.ReadString('\n')
+		}
 		if err := rec.Start(); err != nil {
 			return err
 		}
-		time.Sleep(6 * time.Second) // the operator speaks
+		if enter {
+			fmt.Print("  listening... ")
+			in.ReadString('\n')
+		} else {
+			time.Sleep(6 * time.Second) // the operator speaks
+		}
+		t0 := time.Now()
 		if err := rec.Stop(); err != nil {
 			return err
 		}
 		got := <-rec.Results()
+		fmt.Printf("  %d ms after release\n", time.Since(t0).Milliseconds())
 		ok := tagsMatch(got.Tags, l.Tags)
 		if ok {
 			exact++
@@ -540,6 +575,20 @@ func cmdDevices(args []string) error {
 			star = "*"
 		}
 		fmt.Printf(" %s %s\n     %s\n", star, d.Name, d.ID)
+	}
+
+	fmt.Println("\ninput devices (whisper -mic -device):")
+	ins, err = whisper.InputDevices()
+	if err != nil {
+		fmt.Printf("   unavailable: %v\n", err)
+		return nil
+	}
+	for _, d := range ins {
+		star := " "
+		if d.Default {
+			star = "*"
+		}
+		fmt.Printf(" %s %-6s %s\n", star, d.ID, d.Name)
 	}
 	return nil
 }

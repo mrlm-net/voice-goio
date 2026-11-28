@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -120,6 +121,20 @@ func (r *Recognizer) SetCallsigns(cs []voicegoio.Callsign) error {
 	return nil
 }
 
+// Warmer is a recorder that can open its microphone ahead of the first
+// press (WaveInRecorder with KeepOpen).
+type Warmer interface{ Warm() error }
+
+// Warm opens the microphone now, when the recorder can, so the first press
+// is heard from its first word; call it when the radio is switched on.
+// Without a Warmer it does nothing.
+func (r *Recognizer) Warm() error {
+	if w, ok := r.opt.Recorder.(Warmer); ok {
+		return w.Warm()
+	}
+	return nil
+}
+
 // Start begins recording (PTT pressed).
 func (r *Recognizer) Start() error {
 	r.mu.Lock()
@@ -183,6 +198,9 @@ func (r *Recognizer) Close() error {
 		}
 	}
 	r.wg.Wait()
+	if c, ok := r.opt.Recorder.(io.Closer); ok {
+		c.Close()
+	}
 	close(r.results)
 	return nil
 }

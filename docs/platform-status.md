@@ -20,7 +20,7 @@ It has never run against a live engine. It is complete — COM creation, audio i
 
 ## `stt/whisper`
 
-whisper.cpp's `whisper-cli` as a subprocess, one run per push to talk cycle; its text is tagged by the `stt/fake` parser, so the tags match SAPI's. The tests run against `testdata/fakewhisper`; the real binary and models have not run in a consumer yet. Binaries: whisper.cpp's own for Windows and Linux (x64, arm64), ours for macOS (the `whisper-macos` workflow), or Homebrew's on macOS. Recording uses `arecord` on Linux and sox's `rec` on macOS (`Options.Recorder` replaces it).
+whisper.cpp's `whisper-cli` as a subprocess, one run per push to talk cycle; its text is tagged by the `stt/fake` parser, so the tags match SAPI's. The tests run against `testdata/fakewhisper`; the real binary and models have not run in a consumer yet. Binaries: whisper.cpp's own for Windows and Linux (x64, arm64), ours for macOS (the `whisper-macos` workflow), or Homebrew's on macOS. Recording uses winmm's waveIn on Windows (checked with a wireless headset: first sample 0.8 to 1.1 s after opening, hence `MicRecorder`'s open microphone and pre-roll), `arecord` on Linux and sox's `rec` on macOS (`Options.Recorder` replaces it). Offline on Windows (CPU build, piper-rendered corpus): pilot 50/54, controller 29/31 on base.en.
 
 ## `tts/piper`
 
